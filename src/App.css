@@ -1,0 +1,134 @@
+.App {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+}
+
+.reactflow-wrapper {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* .react-flow__pane {
+  transform: rotateX(50deg) rotateY(0deg) rotateZ(-40deg)
+} */
+
+#node {
+  width: 100px;
+  height: 100px;
+  border: 1px solid white;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+#node3dEdge {
+  width: 70px; 
+  height: 2px;
+  border: 1px solid black;
+  background-color: white;
+  transform-origin: center;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+.path {
+  stroke-width: 2px;
+  stroke: white;
+  fill: none;
+}
+
+.box {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  transform: rotateX(-35deg) rotateY(50deg) rotateZ(0deg);
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
+  -ms-transform-style: preserve-3d;
+  -o-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+.side {
+  width: 100px;
+  height: 100px;
+  background: #c3834c;
+  border: 1px solid #000;
+  position: absolute;
+  opacity: 0.5;
+}
+.side-1 {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  -webkit-transform: rotateX(90deg) translateZ(50px);
+  -moz-transform: rotateX(90deg) translateZ(50px);
+  -ms-transform: rotateX(90deg) translateZ(50px);
+  -o-transform: rotateX(90deg) translateZ(50px);
+  transform: rotateX(90deg) translateZ(50px);
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
+  -ms-transform-style: preserve-3d;
+  -o-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+.side-2 {
+  -webkit-transform: translateZ(50px);
+  -moz-transform: translateZ(50px);
+  -ms-transform: translateZ(50px);
+  -o-transform: translateZ(50px);
+  transform: translateZ(50px);
+  font-family: 'CargoCrate', serif;
+  line-height: 30px;
+  font-size: 14px;
+  text-align: center;
+  color: #663300;
+}
+
+.side-3 {
+  -webkit-transform: rotateY(90deg) translateZ(50px);
+  -moz-transform: rotateY(90deg) translateZ(50px);
+  -ms-transform: rotateY(90deg) translateZ(50px);
+  -o-transform: rotateY(90deg) translateZ(50px);
+  transform: rotateY(90deg) translateZ(50px);
+}
+
+.side-4 {
+  -webkit-transform: rotateX(-90deg) rotate(180deg) translateZ(50px);
+  -moz-transform: rotateX(-90deg) rotate(180deg) translateZ(50px);
+  -ms-transform: rotateX(-90deg) rotate(180deg) translateZ(50px);
+  -o-transform: rotateX(-90deg) rotate(180deg) translateZ(50px);
+  transform: rotateX(-90deg) rotate(180deg) translateZ(50px);
+}
+
+.side-5 {
+  -webkit-transform: rotateY(180deg) translateZ(50px);
+  -moz-transform: rotateY(180deg) translateZ(50px);
+  -ms-transform: rotateY(180deg) translateZ(50px);
+  -o-transform: rotateY(180deg) translateZ(50px);
+  transform: rotateY(180deg) translateZ(50px);
+}
+
+.side-6 {
+  -webkit-transform: rotateY(-90deg) translateZ(50px);
+  -moz-transform: rotateY(-90deg) translateZ(50px);
+  -ms-transform: rotateY(-90deg) translateZ(50px);
+  -o-transform: rotateY(-90deg) translateZ(50px);
+  transform: rotateY(-90deg) translateZ(50px);
+}
+
+.handle-left {
+  transform: translateX(50px) translateY(0px) rotateY(-90deg) translateZ(50px);
+}
+.handle-right {
+  transform: translateX(-50px) translateY(-0px) rotateY(90deg) translateZ(50px);
+}
+.handle-top {
+  transform: translateX(0px) translateY(50px) rotateY(180deg) translateZ(50px);
+}
+.handle-bottom {
+  transform: translateX(0px) translateY(-50px) translateZ(50px);
+}

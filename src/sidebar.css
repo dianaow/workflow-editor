@@ -1,0 +1,21 @@
+.sidebarWrapper {
+  width: 350px;
+  height: 100vh;
+  border-right: 1px solid #d3d3d3;
+  padding: 15px 10px;
+  font-size: 12px;
+  background: #fcfcfc;
+}
+
+.dndnode {
+  height: 20px;
+  padding: 4px;
+  border: 1px solid #ffffff;
+  border-radius: 2px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+}
+
