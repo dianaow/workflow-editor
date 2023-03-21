@@ -7,16 +7,24 @@
 .reactflow-wrapper {
   width: 100vw;
   height: 100vh;
+  position: relative;
 }
 
 /* .react-flow__pane {
   transform: rotateX(50deg) rotateY(0deg) rotateZ(-40deg)
 } */
 
+.importBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 99;
+}
+
 #node {
   width: 100px;
   height: 100px;
-  border: 1px solid white;
+  border: 1px solid #4285F4;
   position: absolute;
   top: 0px;
   left: 0px;
@@ -26,7 +34,7 @@
   width: 70px; 
   height: 2px;
   border: 1px solid black;
-  background-color: white;
+  background-color: black;
   transform-origin: center;
   position: absolute;
   top: 0px;
@@ -35,8 +43,9 @@
 
 .path {
   stroke-width: 2px;
-  stroke: white;
+  stroke: black;
   fill: none;
+  opacity: 1;
 }
 
 .box {
@@ -54,7 +63,7 @@
 .side {
   width: 100px;
   height: 100px;
-  background: #c3834c;
+  background: #C1C1C1;
   border: 1px solid #000;
   position: absolute;
   opacity: 0.5;
@@ -85,7 +94,7 @@
   line-height: 30px;
   font-size: 14px;
   text-align: center;
-  color: #663300;
+  z-index: -1;
 }
 
 .side-3 {
@@ -94,6 +103,7 @@
   -ms-transform: rotateY(90deg) translateZ(50px);
   -o-transform: rotateY(90deg) translateZ(50px);
   transform: rotateY(90deg) translateZ(50px);
+  z-index: 2;
 }
 
 .side-4 {
@@ -110,6 +120,7 @@
   -ms-transform: rotateY(180deg) translateZ(50px);
   -o-transform: rotateY(180deg) translateZ(50px);
   transform: rotateY(180deg) translateZ(50px);
+  z-index: 2;
 }
 
 .side-6 {
@@ -118,6 +129,7 @@
   -ms-transform: rotateY(-90deg) translateZ(50px);
   -o-transform: rotateY(-90deg) translateZ(50px);
   transform: rotateY(-90deg) translateZ(50px);
+  z-index: -1;
 }
 
 .handle-left {

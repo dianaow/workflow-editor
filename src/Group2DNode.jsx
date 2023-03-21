@@ -1,46 +1,37 @@
 import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
 
-export default memo(({ data, isConnectable }) => {
+export default memo(({ data, isConnectable, ...props }) => {
   return (
     <>
-      <div className='box'>
-        <div className="side side-1">{data.label}</div>
-        <div className="side side-2">{data.name}</div>
-        <div className="side side-3"></div>
-        <div className="side side-4"></div>
-        <div className="side side-5"></div>
-        <div className="side side-6"></div>
+      <div style={{width: data.width, height: data.height, background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' }}>
+        <div>{data.label}</div>
       <Handle
         type="target"
         position={Position.Left}
-        className='handle-left'
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
       <Handle
         type="source"
         position={Position.Right}
-        className='handle-right'
         id="a"
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       <Handle
         type="target"
-        className='handle-bottom'
         position={Position.Bottom}
         id="b"
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       <Handle
         type="source"
-        className='handle-top'
         position={Position.Top}
         id="b"
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       </div>

@@ -17,15 +17,14 @@ export default function CustomEdge({
   let b2 = targetY -  Math.tan(-35 * Math.PI/180) * targetX
   let dist = Math.abs(b2-b1) / 1.05
   //let dist = Math.abs(b2-b1)
-  console.log(id, b2-b1, Math.sqrt(Math.pow(Math.tan(-35 * Math.PI/180),2) + 1))
 
   let p1 = sourceY -  Math.tan(-155 * Math.PI/180) * sourceX
   let p2 = targetY -  Math.tan(-155 * Math.PI/180) * targetX
-  console.log(id, p2-p1)
+  //console.log(id, b2-b1, p2-p1)
 
   let yOffset = Math.sin(-35 * Math.PI/180) * (targetX-sourceX)/2
   let xOffset = Math.cos(-35 * Math.PI/180) * (targetX-sourceX)/2
-  console.log(id, xOffset, yOffset)
+
   xOffset = xOffset < 0 ? 0 : xOffset
   yOffset = yOffset > 0 ? 0 : yOffset
 
@@ -45,8 +44,8 @@ export default function CustomEdge({
   const [edgeH2] = getStraightPath({
     sourceX: sourceX + xOffset + xOffset1,
     sourceY: sourceY + yOffset + yOffset1,
-    targetX: (p1 < p2 && sourceY < targetY) ? targetX + xOffset2 : targetX,
-    targetY: (p1 < p2 && sourceY < targetY) ? targetY + yOffset2 : targetY
+    targetX: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetX + xOffset2 : targetX,
+    targetY: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetY + yOffset2 : targetY
   });
 
   const [edgeV] = getStraightPath({

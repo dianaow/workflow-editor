@@ -8,11 +8,13 @@ export default memo(({ data, isConnectable }) => {
     <div style={{position: 'relative', width: '100px', height: '100px'}}>
       {/* <div id="node" style={{transform: `translate(20px, -25px)`}}></div> */}
       <div id="node" style={{transform: `translate(0px, 0px)`}}>
+        <div>{data.label}</div>
+        <div>{data.name}</div>
       <Handle
         id='left'
         type='target'
         position={Position.Left}
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
@@ -20,7 +22,7 @@ export default memo(({ data, isConnectable }) => {
         id='top'
         type='target'
         position={Position.Top}
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
@@ -28,7 +30,7 @@ export default memo(({ data, isConnectable }) => {
         id='right'
         type='source'
         position={Position.Right}
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
@@ -36,7 +38,7 @@ export default memo(({ data, isConnectable }) => {
         id='bottom'
         type='source'
         position={Position.Bottom}
-        style={{ background: '#555' }}
+        style={{ background: '#555', opacity: 0.3 }}
         onConnect={(params) => console.log('handle onConnect', params)}
         isConnectable={isConnectable}
       />
