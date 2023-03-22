@@ -86,7 +86,7 @@ function App() {
           height: 140 * (d.connectTo.length+1),
           origX: 20, 
           origY: 20 
-        },
+        }, 
         position: {
           //x: 20,
           //y: 20,
@@ -113,6 +113,7 @@ function App() {
       }
 
       let rectXGlobal = 20
+      let counter = 0
       if(d.nodes){
         d.nodes.map((d1,i1) => {
           
@@ -155,7 +156,7 @@ function App() {
                       origY: rectY
                     },
                     parentNode: d1.id,
-                    extent: 'parent',
+                    //extent: 'parent',
                     position: { 
                       x: rectX, 
                       y: rectY 
@@ -187,6 +188,7 @@ function App() {
             }) 
 
             const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
+            console.log(counter)
             //group nodes
             nodes.push({
               ...d1,
@@ -200,16 +202,22 @@ function App() {
                 origY: 20
               },
               parentNode: d1.type === "group" ? d.id : null,
-              extent:  d1.type === "group" ? 'parent' : null,
+              //extent:  d1.type === "group" ? 'parent' : null,
               position: { 
                 //x: rectXGlobal,
                 //y: 20,
                 x: rectXGlobal * Math.cos(-35 * Math.PI/180), 
-                y: singleNodeCounter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180))
+                y: counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200
               }, 
             })
-            
-            rectXGlobal += nrOfColumns * 120 + 60
+            let conn = edges.filter(e => e.target === d1.id)
+            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+            if(nodesWithSameSource.length === 1) {
+              rectXGlobal += nrOfColumns * 120 + 60
+              counter += 1
+            }
+
           } else {
             // node with icon without group
             const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
@@ -223,12 +231,12 @@ function App() {
                 origY: 20 + (120 * singleNodeCounter)
               },
               parentNode: d.id,
-              extent: 'parent',
+              //extent: 'parent',
               position: { 
                 //x: rectXGlobal,
                 //y: 20 + 120 * singleNodeCounter,
                 x: rectXGlobal * Math.cos(-35 * Math.PI/180), 
-                y: (20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)
+                y: (20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200
               },
             })
             if(i1 === 0 || i1 === d.nodes.filter(n => n.nodes.length === 0).length -1){
@@ -252,6 +260,7 @@ function App() {
           X = Math.min(...nodesWithSameSource.map(d => d.position.x))
           let refNode = nodesWithSameSource.find(n => n.position.x === X)
           if(refNode){
+            console.log(refNode.id === node.id)
             let targetX = (refNode.data.height * Math.sin(-35 * Math.PI/180) + (refNode.position.y -  Math.tan(-155 * Math.PI/180) * refNode.position.x) - refNode.position.y) / -Math.tan(-155 * Math.PI/180)
             X = refNode.id === node.id ? refNode.position.x : targetX
             Y = refNode.id === node.id ? refNode.position.y : refNode.data.height + 40
@@ -261,15 +270,17 @@ function App() {
       } 
     })
 
+    
     nodes.forEach(node => {
       let conn = edges.filter(e => e.target === node.id)
       if(node.type !== 'groupNode'){
         if(conn.length > 0){
+          const singleNodeCounter = +node.id.split('-')[2].split('')[2] - 1
           let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
           let sourceX = Math.max(...sourceNodes.map(d => d.position.x))
           let width = Math.max(...sourceNodes.map(d => d.data.width)) 
-          let X = sourceX + width + 40
-          node.position = {x: X, y: node.position.y}
+          let X = sourceX + (width + 60) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
+          node.position = {x: X, y: node.position.y }
         } 
       } 
     })
@@ -278,8 +289,8 @@ function App() {
     const minX = Math.min(...nodes.slice(1).map(d => d.position.x))
     const maxY = Math.max(...nodes.slice(1).map(d => d.position.y))
     const minY = Math.min(...nodes.slice(1).map(d => d.position.y))
-    nodes[0].position = {x: minX, y: minY}
-    nodes[0].data = { ...nodes[0].data, width: maxX - minX + 300, height:  maxY - minY + 300}
+    nodes[0].position = {x: minX * Math.sin(-35 * Math.PI/180), y: minY}
+    nodes[0].data = { ...nodes[0].data, width: maxX - minX + 200, height:  maxY - minY + 200}
 
     setNodes([...nodes]);
     setEdges([...edges])

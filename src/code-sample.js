@@ -112,7 +112,7 @@ export const codeSample = {
           name: null,
           type: "group",
           category: "group",
-          connectTo: [],
+          connectTo: ["viz01-g01-g03"],
           otherProperties: "...",
           nodes: [
             {
