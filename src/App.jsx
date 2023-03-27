@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import ReactFlow, { Position, MarkerType, ReactFlowProvider, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow';
 import Custom2DNode from './Custom2DNode';
 import Custom3DNode from './Custom3DNode';
@@ -6,86 +6,51 @@ import Group3DNode from './Group3DNode';
 import Group2DNode from './Group2DNode';
 import CustomEdge from './CustomEdge';
 import Sidebar from './Sidebar';
-import dagre from 'dagre';
 import 'reactflow/dist/style.css';
 import './App.css'
 import './sidebar.css'
-import {codeSample} from './code-sample.js'
+//import {codeSample} from './code-sample.js'
 
 const nodeTypes = {
-  boxNode: Custom3DNode,
-  defaultNode: Custom2DNode,
-  groupNode: Group3DNode,
+  default2DNode: Custom2DNode,
+  group2DNode: Group2DNode,
+  default3DNode: Custom3DNode,
+  group3DNode: Group3DNode
 }
 
 const edgeTypes = {
-  boxEdge: CustomEdge,
+  edge3D: CustomEdge
 }
-
-const EDGE_TYPE = 'boxEdge'
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-const getLayoutedElements = (nodes, edges, direction = 'TB') => {
-
-  const nodeWidth = (node) => 200 * (node.connectTo.length+1)
-  const nodeHeight = (node) => 200 * (node.connectTo.length+1)
-  const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth(node), height: nodeHeight(node) });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    node.targetPosition = isHorizontal ? 'left' : 'top';
-    node.sourcePosition = isHorizontal ? 'right' : 'bottom';
-
-    // We are shifting the dagre node position (anchor=center center) to the top left
-    // so it matches the React Flow node anchor point (top left).
-    node.position = {
-      x: nodeWithPosition.x - nodeWidth(node) / 2,
-      y: nodeWithPosition.y - nodeHeight(node) / 2,
-    };
-
-    return node;
-  });
-
-  return { nodes, edges };
-};
-
 function App() {
   const reactFlowWrapper = useRef(null);
+  const [rawData, setRawData] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
+  const [toggleState, setToggleState] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-  const updateData = (data) => {
+  const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
+  const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
+  const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
+
+  const updateData = (data, toggleState) => {
     let nodes = []
     let edges = []
-
     data.nodes.map(d => {
       nodes.push({
         ...d,
-        type: d.type === "group" ? 'groupNode' : 'boxNode',
+        type: d.type === "group" ? GROUP_NODE_TYPE : NODE_TYPE,
         data: { 
           label: d.id, 
           name: d.name, 
           width: 140 * (d.connectTo.length+1), 
           height: 140 * (d.connectTo.length+1),
           origX: 20, 
-          origY: 20 
+          origY: 20
         }, 
         position: {
           //x: 20,
@@ -148,15 +113,17 @@ function App() {
                   // node with icon within group
                   nodes.push({
                     ...d2,
-                    type: 'boxNode',
+                    type: NODE_TYPE,
                     data: { 
                       label: d2.id, 
                       name: d2.name,
                       origX: rectX, 
-                      origY: rectY
+                      origY: rectY,
+                      width: 140,
+                      height: 140
                     },
                     parentNode: d1.id,
-                    //extent: 'parent',
+                    extent: toggleState ? null : 'parent',
                     position: { 
                       x: rectX, 
                       y: rectY 
@@ -187,12 +154,10 @@ function App() {
               }
             }) 
 
-            const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
-            console.log(counter)
             //group nodes
             nodes.push({
               ...d1,
-              type: d1.type === "group" ? 'groupNode' : 'boxNode',
+              type: d1.type === "group" ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name, 
@@ -202,12 +167,10 @@ function App() {
                 origY: 20
               },
               parentNode: d1.type === "group" ? d.id : null,
-              //extent:  d1.type === "group" ? 'parent' : null,
+              extent:  d1.type === "group" ? (toggleState ? null : 'parent') : null,
               position: { 
-                //x: rectXGlobal,
-                //y: 20,
-                x: rectXGlobal * Math.cos(-35 * Math.PI/180), 
-                y: counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
               }, 
             })
             let conn = edges.filter(e => e.target === d1.id)
@@ -223,20 +186,20 @@ function App() {
             const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
             nodes.push({
               ...d1,
-              type: 'boxNode',
+              type: NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name, 
                 origX: rectXGlobal, 
-                origY: 20 + (120 * singleNodeCounter)
+                origY: 20 + (120 * singleNodeCounter),
+                width: 140,
+                height: 140
               },
               parentNode: d.id,
-              //extent: 'parent',
+              extent: toggleState ? null : 'parent',
               position: { 
-                //x: rectXGlobal,
-                //y: 20 + 120 * singleNodeCounter,
-                x: rectXGlobal * Math.cos(-35 * Math.PI/180), 
-                y: (20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
               },
             })
             if(i1 === 0 || i1 === d.nodes.filter(n => n.nodes.length === 0).length -1){
@@ -249,65 +212,103 @@ function App() {
       }
     })
 
-    nodes.forEach(node => {
-      let conn = edges.filter(e => e.target === node.id)
-      let X = 0
-      let Y = 0
-      if(node.type === 'groupNode'){
-        if(conn.length > 0){
-          let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-          let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-          X = Math.min(...nodesWithSameSource.map(d => d.position.x))
-          let refNode = nodesWithSameSource.find(n => n.position.x === X)
-          if(refNode){
-            console.log(refNode.id === node.id)
-            let targetX = (refNode.data.height * Math.sin(-35 * Math.PI/180) + (refNode.position.y -  Math.tan(-155 * Math.PI/180) * refNode.position.x) - refNode.position.y) / -Math.tan(-155 * Math.PI/180)
-            X = refNode.id === node.id ? refNode.position.x : targetX
-            Y = refNode.id === node.id ? refNode.position.y : refNode.data.height + 40
-            node.position = {x: X, y: refNode.position.y }
-          }
+    if(toggleState){
+      nodes.forEach(node => {
+        let conn = edges.filter(e => e.target === node.id)
+        let X = 0
+        let Y = 0
+        if(node.type === GROUP_NODE_TYPE){
+          if(conn.length > 0){
+            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+            X = Math.min(...nodesWithSameSource.map(d => d.position.x))
+            let refNode = nodesWithSameSource.find(n => n.position.x === X)
+            if(refNode){
+              let targetX = (refNode.data.height * Math.sin(-35 * Math.PI/180) + (refNode.position.y -  Math.tan(-155 * Math.PI/180) * refNode.position.x) - refNode.position.y) / -Math.tan(-155 * Math.PI/180)
+              X = refNode.id === node.id ? refNode.position.x : targetX
+              node.position = {x: X, y: refNode.position.y}
+            }
+          } 
         } 
-      } 
-    })
+      })
+  
+      nodes.forEach(node => {
+        let conn = edges.filter(e => e.target === node.id)
+        if(node.type !== GROUP_NODE_TYPE){
+          if(conn.length > 0){
+            const singleNodeCounter = +node.id.split('-')[2].split('')[2] - 1
+            let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
+            let sourceX = Math.max(...sourceNodes.map(d => d.position.x))
+            let width = Math.max(...sourceNodes.map(d => d.data.width)) 
+            let X = sourceX + (width + 60) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
+            node.position = {x: X, y: node.position.y}
+          } 
+        } 
+      })
+    } else {
+      nodes.forEach(node => {
+        let conn = edges.filter(e => e.target === node.id)
+        let X = 0
+        let Y = 0
+        if(node.type === GROUP_NODE_TYPE){
+          if(conn.length > 0){
+            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+            X = Math.min(...nodesWithSameSource.map(d => d.position.x))
+            let refNode = nodesWithSameSource.find(n => n.position.x === X)
+            Y = refNode.id === node.id ? node.position.y : refNode.data.height + 40
+            node.position = {x: refNode.position.x, y: Y}
+          } 
+        } 
+      })
+  
+      nodes.forEach(node => {
+        let conn = edges.filter(e => e.target === node.id)
+        if(node.type !== GROUP_NODE_TYPE){
+          if(conn.length > 0){
+            let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
+            let X = Math.max(...sourceNodes.map(d => d.position.x)) + Math.max(...sourceNodes.map(d => d.data.width)) + 40
+            node.position = {x: X, y: node.position.y}
+          } 
+        } 
+      })  
+    }
 
-    
-    nodes.forEach(node => {
-      let conn = edges.filter(e => e.target === node.id)
-      if(node.type !== 'groupNode'){
-        if(conn.length > 0){
-          const singleNodeCounter = +node.id.split('-')[2].split('')[2] - 1
-          let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
-          let sourceX = Math.max(...sourceNodes.map(d => d.position.x))
-          let width = Math.max(...sourceNodes.map(d => d.data.width)) 
-          let X = sourceX + (width + 60) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
-          node.position = {x: X, y: node.position.y }
-        } 
-      } 
-    })
-    
     const maxX = Math.max(...nodes.slice(1).map(d => d.position.x))
     const minX = Math.min(...nodes.slice(1).map(d => d.position.x))
     const maxY = Math.max(...nodes.slice(1).map(d => d.position.y))
     const minY = Math.min(...nodes.slice(1).map(d => d.position.y))
-    nodes[0].position = {x: minX * Math.sin(-35 * Math.PI/180), y: minY}
-    nodes[0].data = { ...nodes[0].data, width: maxX - minX + 200, height:  maxY - minY + 200}
+    nodes[0].position = {x: toggleState ? minX * Math.sin(-35 * Math.PI/180) : minX, y: minY}
+    nodes[0].data = { ...nodes[0].data, width: maxX - minX + 300, height:  maxY - minY + 300}
 
     setNodes([...nodes]);
     setEdges([...edges])
   }
 
-  const importData = () => {
-    updateData(codeSample)
-    // let reader = new FileReader();
-    // reader.onload = (e) => {
-    //   try {
-    //     let data = JSON.parse(e.target.result)
-    //     updateData(data)
-    //   } catch {
-    //     console.log('error uploading json')
-    //   }  
-    // }
+  useEffect(() => {
+    if(Object.keys(rawData).length !== 0){
+      updateData(rawData, toggleState)
+    }
+  }, [rawData, toggleState])
+
+  const importData = (e) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let data = JSON.parse(event.target.result)[0]
+      setRawData(data)
+      updateData(data, toggleState)
+    }
+    reader.readAsText(e.target.files[0]);
   }
+
+  const exportData = (e) => {
+    const data = {nodes, edges}
+    const a = document.createElement("a");
+    const file = new Blob([JSON.stringify(data)], {type: 'text/plain'});
+    a.href = URL.createObjectURL(file);
+    a.download = 'export.json';
+    a.click();
+  }  
 
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -318,7 +319,7 @@ function App() {
     []
   );
 
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge({...params, type: 'boxEdge', markerEnd: {type: MarkerType.ArrowClosed},}, eds)), []);
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge({...params, type: 'step', markerEnd: {type: MarkerType.ArrowClosed},}, eds)), []);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -358,7 +359,21 @@ function App() {
       <ReactFlowProvider>
         <Sidebar />
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-          <button type='button' className='importBtn' onClick={() => importData()}>Import from Code</button>
+          <div style={{position: 'absolute', top: '0px', left: '0px', display: 'flex', zIndex: 99}}>
+            <div style={{margin: "10px"}}>
+              <label for="file-upload" className="custom-file-upload btn">Import from Code</label>
+              <input type="file" id="file-upload" accept="application/json" onChange={importData} style={{display: "none"}}/>
+            </div>
+            <div style={{margin: "10px"}}>
+              <div id="file-export" className="custom-file-upload btn" onClick={exportData}>Export JSON</div>
+            </div>
+            <div style={{margin: "10px"}}>
+              <label className="switch">
+                <input type="checkbox" />
+                <span className="slider round" onClick={() => setToggleState(!toggleState)}></span>
+              </label>
+            </div>
+          </div>
           <ReactFlow
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
@@ -367,7 +382,7 @@ function App() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            // onInit={setReactFlowInstance}
+            onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
             fitView
@@ -382,3 +397,4 @@ function App() {
 }
 
 export default App
+

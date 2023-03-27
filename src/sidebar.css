@@ -8,9 +8,11 @@
 }
 
 .dndnode {
-  height: 20px;
+  width: 100px;
+  height: 100px;
   padding: 4px;
-  border: 1px solid #ffffff;
+  border: 1px solid #4285F4;
+  color: #4285F4;
   border-radius: 2px;
   margin-bottom: 10px;
   display: flex;

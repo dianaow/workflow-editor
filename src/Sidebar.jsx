@@ -8,7 +8,8 @@ export default () => {
 
   return (
     <div className="sidebarWrapper">
-      <div className="dndnode" onDragStart={(event) => onDragStart(event, 'defaultNode')} draggable>
+      <h3>Components</h3>
+      <div className="dndnode" onDragStart={(event) => onDragStart(event, 'default2DNode')} draggable>
         Default Node
       </div>
     </div>
