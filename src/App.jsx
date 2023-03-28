@@ -10,6 +10,8 @@ import 'reactflow/dist/style.css';
 import './App.css'
 import './sidebar.css'
 //import {codeSample} from './code-sample.js'
+import { ReactComponent as Download } from "./assets/misc/download.svg"
+import { ReactComponent as Upload } from "./assets/misc/upload.svg"
 
 const nodeTypes = {
   default2DNode: Custom2DNode,
@@ -31,6 +33,7 @@ function App() {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [toggleState, setToggleState] = useState(false);
+  const [edgeType, setEdgeType] = useState('single-connector')
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
@@ -57,7 +60,8 @@ function App() {
           //y: 20,
           x: 20 * Math.cos(-35 * Math.PI/180), 
           y: 20 * Math.sin(-35 * Math.PI/180)
-        }
+        },
+        zIndex: d.type === "group" ? -1 : 1
       })
 
       if(d.connectTo.length > 0){
@@ -120,7 +124,8 @@ function App() {
                       origX: rectX, 
                       origY: rectY,
                       width: 140,
-                      height: 140
+                      height: 140,
+                      icon: 'PubSub'
                     },
                     parentNode: d1.id,
                     extent: toggleState ? null : 'parent',
@@ -128,6 +133,7 @@ function App() {
                       x: rectX, 
                       y: rectY 
                     },
+                    zIndex: 1
                   })
                 }
                 rectY += rectWidth + 20;
@@ -172,6 +178,7 @@ function App() {
                 x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
                 y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
               }, 
+              zIndex:  d1.type === "group" ? 0 : 1
             })
             let conn = edges.filter(e => e.target === d1.id)
             let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
@@ -201,6 +208,7 @@ function App() {
                 x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
                 y: toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
               },
+              zIndex: 1
             })
             if(i1 === 0 || i1 === d.nodes.filter(n => n.nodes.length === 0).length -1){
               rectX += rectWidth + 20
@@ -319,7 +327,19 @@ function App() {
     []
   );
 
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge({...params, type: 'step', markerEnd: {type: MarkerType.ArrowClosed},}, eds)), []);
+  const onConnect = useCallback((params) => setEdges((eds) => { 
+    console.log(edgeType)
+    return addEdge(
+    {
+      ...params, 
+      type: 'step', 
+      markerEnd: {
+        type: edgeType === 'line' ? null : MarkerType.ArrowClosed,
+      },
+      markerStart: {
+        type: (edgeType === 'line' || edgeType === 'single-connector') ? null : MarkerType.ArrowClosed,
+      }  
+    }, eds) }), [edgeType]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -344,9 +364,9 @@ function App() {
       });
       const newNode = {
         id: getId(),
-        type,
+        type: 'default2DNode',
         position,
-        data: { label: `${type} node` },
+        data: { name: `${type}` },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -357,23 +377,32 @@ function App() {
   return (
     <div className="App">
       <ReactFlowProvider>
-        <Sidebar />
+        <Sidebar setEdgeType={setEdgeType} />
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <div style={{position: 'absolute', top: '0px', left: '0px', display: 'flex', zIndex: 99}}>
-            <div style={{margin: "10px"}}>
-              <label for="file-upload" className="custom-file-upload btn">Import from Code</label>
+            <div className="btn">
+              <label style={{display: 'flex'}} for="file-upload">
+                <div className='btn-svg'><Upload/></div>
+                <div>Import JSON</div>
+              </label>
               <input type="file" id="file-upload" accept="application/json" onChange={importData} style={{display: "none"}}/>
             </div>
-            <div style={{margin: "10px"}}>
-              <div id="file-export" className="custom-file-upload btn" onClick={exportData}>Export JSON</div>
+            <div className="btn">
+              <div style={{display: 'flex'}} id="file-export" onClick={exportData}>
+                <div className='btn-svg'><Download/></div>
+                <div>Export JSON</div>
+              </div>
             </div>
-            <div style={{margin: "10px"}}>
+            <div style={{margin: "17px 0px 0px 25px"}}>
               <label className="switch">
                 <input type="checkbox" />
                 <span className="slider round" onClick={() => setToggleState(!toggleState)}></span>
               </label>
             </div>
           </div>
+          {Object.keys(rawData).length === 0 &&
+            <div style={{position: 'absolute', top: '50%', left: '45%', width: '278px'}}>Add components from the component lib, or generate diagram by importing from code</div>
+          }
           <ReactFlow
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
@@ -390,6 +419,9 @@ function App() {
             <Background />
             <Controls />
           </ReactFlow>
+          {toggleState &&
+            <div style={{position: 'absolute', bottom: '30px', right: '20px', display: 'flex'}}>View only mode in 3D view </div>
+          }
         </div>
       </ReactFlowProvider>
     </div>

@@ -1,8 +1,9 @@
 .sidebarWrapper {
-  width: 350px;
+  width: 20vw;
+  min-width: 20vw;
   height: 100vh;
   border-right: 1px solid #d3d3d3;
-  padding: 15px 10px;
+  padding: 17px 0px;
   font-size: 12px;
   background: #fcfcfc;
 }
@@ -19,5 +20,23 @@
   justify-content: center;
   align-items: center;
   cursor: grab;
+}
+
+.sidebar--header {
+  background-color: #4285F4;
+  color: white;
+  width: 100%;
+  font-size: 14px;
+}
+
+.sidebar--cloud-components {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sidebar--items {
+  margin: 4px;
+  padding-top: 23px;
+  width: 30%;
 }
 
