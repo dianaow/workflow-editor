@@ -229,3 +229,15 @@ input[type="file"] {
 .btn-label {
   margin: 3px 4px;
 }
+
+.updatenode__controls {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  width: 580px;
+  z-index: 99;
+  background-color: white;
+  border-radius: 2px;
+  padding: 16px;
+
+}

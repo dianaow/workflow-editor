@@ -6,6 +6,7 @@ import Group3DNode from './Group3DNode';
 import Group2DNode from './Group2DNode';
 import CustomEdge from './CustomEdge';
 import Sidebar from './Sidebar';
+import Form from './Form';
 import 'reactflow/dist/style.css';
 import './App.css'
 import './sidebar.css'
@@ -41,6 +42,7 @@ function App() {
   const [toggleState, setToggleState] = useState(false);
   const [edgeType, setEdgeType] = useState('single-connector')
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
   const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
@@ -285,6 +287,12 @@ function App() {
     setEdges([...edges])
   }
 
+  const updateGraph = (updates) => {
+    console.log('after component update', updates)
+    setNodes([...nodes.filter(d => d.id !== selectedGraph.node.id), updates.node]);
+    //setEdges([...edges, updates.edges])
+  }
+
   useEffect(() => {
     if(Object.keys(rawData).length !== 0){
       updateData(rawData, toggleState)
@@ -315,6 +323,20 @@ function App() {
     []
   );
 
+  // const onNodeDragStop = useCallback((event, node) => {
+  //   const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
+  //   const groupNode = nodes.find(d => d.id === intersections[0])
+  //   setNodes((ns) =>
+  //     ns.map((n) => ({
+  //       ...n,
+  //       parentNode: groupNode.id,
+  //       extent: n.id === node.id ? 'parent' : null,
+  //       position: n.id === node.id ? {x: 10, y: 10} : n.position,
+  //       positionAbsolute: n.id === node.id ? {x: groupNode.position.x + 10, y: groupNode.position.y + 10} : null
+  //     }))
+  //   );
+  // }, [nodes, reactFlowInstance]);
+
   const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
@@ -343,20 +365,11 @@ function App() {
       }  
     }, eds) }), [edgeType]);
 
-  const onNodeClick = (event, node) => console.log('click node', node);
+  const onNodeClick = (event, node) => {
+    const selectedEdges = edges.filter(e => e.source === node.id || e.target === node.id)
+    setSelectedGraph({node, edges: selectedEdges})
+  }
   
-  const onNodeDragStop = useCallback((event, node) => {
-    const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
-    const nodesCopy = [...nodes]
-    nodesCopy.forEach(d => {
-      if(intersections.includes(d.id)){
-        d.parentNode = d.id
-        d.extent = 'parent'
-      }
-    })
-    //setNodes(nodesCopy)
-  }, [nodes, reactFlowInstance]);
-
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -434,7 +447,7 @@ function App() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeDragStop={onNodeDragStop}
-            selectNodesOnDrag={false}
+            //selectNodesOnDrag={false}
             minZoom={0.2}
             maxZoom={4}
             fitView
@@ -442,6 +455,7 @@ function App() {
             <Background />
             <Controls />
           </ReactFlow>
+          <Form selectedGraph={selectedGraph} updateGraph={updateGraph}/>
           {toggleState &&
             <div style={{position: 'absolute', bottom: '30px', right: '20px', display: 'flex'}}>View only mode in 3D view </div>
           }
