@@ -226,3 +226,6 @@ input[type="file"] {
 .btn-svg {
   padding: 4px;
 }
+.btn-label {
+  margin: 3px 4px;
+}

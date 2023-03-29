@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import ReactFlow, { Position, MarkerType, ReactFlowProvider, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow';
+import ReactFlow, { MarkerType, ReactFlowProvider, Controls, Background, applyNodeChanges, applyEdgeChanges, updateEdge, addEdge } from 'reactflow';
 import Custom2DNode from './Custom2DNode';
 import Custom3DNode from './Custom3DNode';
 import Group3DNode from './Group3DNode';
@@ -24,6 +24,12 @@ const edgeTypes = {
   edge3D: CustomEdge
 }
 
+const MARKER_END = {
+  type: MarkerType.ArrowClosed,
+  width: 20,
+  height:20
+}       
+
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
@@ -46,22 +52,13 @@ function App() {
     data.nodes.map(d => {
       nodes.push({
         ...d,
-        type: d.type === "group" ? GROUP_NODE_TYPE : NODE_TYPE,
+        type: GROUP_NODE_TYPE,
         data: { 
           label: d.id, 
-          name: d.name, 
-          width: 140 * (d.connectTo.length+1), 
-          height: 140 * (d.connectTo.length+1),
-          origX: 20, 
-          origY: 20
+          name: d.name
         }, 
-        position: {
-          //x: 20,
-          //y: 20,
-          x: 20 * Math.cos(-35 * Math.PI/180), 
-          y: 20 * Math.sin(-35 * Math.PI/180)
-        },
-        zIndex: d.type === "group" ? -1 : 1
+        style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+        zIndex: -1
       })
 
       if(d.connectTo.length > 0){
@@ -74,9 +71,7 @@ function App() {
             style: { 
               stroke: '#555'
             },
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-            }       
+            markerEnd: MARKER_END
           })
         })
       }
@@ -96,9 +91,7 @@ function App() {
                 style: { 
                   stroke: '#555'
                 },
-                markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                }       
+                markerEnd: MARKER_END   
               })
             })
           }
@@ -152,9 +145,7 @@ function App() {
                     style: { 
                       stroke: '#555'
                     },
-                    markerEnd: {
-                      type: MarkerType.ArrowClosed,
-                    }       
+                    markerEnd: MARKER_END 
                   })
                 })
               }
@@ -163,7 +154,7 @@ function App() {
             //group nodes
             nodes.push({
               ...d1,
-              type: d1.type === "group" ? GROUP_NODE_TYPE : NODE_TYPE,
+              type: GROUP_NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name, 
@@ -172,13 +163,14 @@ function App() {
                 origX: rectXGlobal,
                 origY: 20
               },
-              parentNode: d1.type === "group" ? d.id : null,
-              extent:  d1.type === "group" ? (toggleState ? null : 'parent') : null,
+              style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+              parentNode: d.id,
+              extent: toggleState ? null : 'parent',
               position: { 
                 x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
                 y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
               }, 
-              zIndex:  d1.type === "group" ? 0 : 1
+              zIndex: 1
             })
             let conn = edges.filter(e => e.target === d1.id)
             let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
@@ -322,24 +314,48 @@ function App() {
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
   );
+
   const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
 
+  // gets called after end of edge gets dragged to another source or target
+  const onEdgeUpdate = useCallback(
+    (oldEdge, newConnection) => setEdges((els) => updateEdge(oldEdge, newConnection, els)),
+    []
+  );
+
   const onConnect = useCallback((params) => setEdges((eds) => { 
-    console.log(edgeType)
     return addEdge(
     {
       ...params, 
       type: 'step', 
       markerEnd: {
         type: edgeType === 'line' ? null : MarkerType.ArrowClosed,
+        width: 20,
+        height: 20
       },
       markerStart: {
         type: (edgeType === 'line' || edgeType === 'single-connector') ? null : MarkerType.ArrowClosed,
+        width: 20,
+        height: 20
       }  
     }, eds) }), [edgeType]);
+
+  const onNodeClick = (event, node) => console.log('click node', node);
+  
+  const onNodeDragStop = useCallback((event, node) => {
+    const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
+    const nodesCopy = [...nodes]
+    nodesCopy.forEach(d => {
+      if(intersections.includes(d.id)){
+        d.parentNode = d.id
+        d.extent = 'parent'
+      }
+    })
+    //setNodes(nodesCopy)
+  }, [nodes, reactFlowInstance]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -364,9 +380,10 @@ function App() {
       });
       const newNode = {
         id: getId(),
-        type: 'default2DNode',
+        type: type === 'Group' ? 'group2DNode' : 'default2DNode',
         position,
-        data: { name: `${type}` },
+        data: { name: `${type}`},
+        style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {}
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -383,14 +400,14 @@ function App() {
             <div className="btn">
               <label style={{display: 'flex'}} for="file-upload">
                 <div className='btn-svg'><Upload/></div>
-                <div>Import JSON</div>
+                <div className='btn-label'>Import JSON</div>
               </label>
               <input type="file" id="file-upload" accept="application/json" onChange={importData} style={{display: "none"}}/>
             </div>
             <div className="btn">
               <div style={{display: 'flex'}} id="file-export" onClick={exportData}>
                 <div className='btn-svg'><Download/></div>
-                <div>Export JSON</div>
+                <div className='btn-label'>Export JSON</div>
               </div>
             </div>
             <div style={{margin: "17px 0px 0px 25px"}}>
@@ -400,7 +417,7 @@ function App() {
               </label>
             </div>
           </div>
-          {Object.keys(rawData).length === 0 &&
+          {nodes.length === 0 &&
             <div style={{position: 'absolute', top: '50%', left: '45%', width: '278px'}}>Add components from the component lib, or generate diagram by importing from code</div>
           }
           <ReactFlow
@@ -410,10 +427,16 @@ function App() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onEdgeUpdate={onEdgeUpdate}
+            onNodeClick={onNodeClick}
             onConnect={onConnect}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeDragStop={onNodeDragStop}
+            selectNodesOnDrag={false}
+            minZoom={0.2}
+            maxZoom={4}
             fitView
           >
             <Background />

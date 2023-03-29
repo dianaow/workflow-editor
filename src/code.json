@@ -126,7 +126,7 @@
                  "type": "group",
                  "category": "group",
                  "connectTo": [
-                    "viz01-g01-g03"
+                    
                  ],
                  "otherProperties": "...",
                  "nodes": [
