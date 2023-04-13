@@ -37,6 +37,7 @@ export default memo(({ data, isConnectable }) => {
         <div className="side side-5"></div>
         <div className="side side-6"></div>
       <Handle
+        id='left'
         type="target"
         position={Position.Left}
         className='handle-left'
@@ -45,26 +46,26 @@ export default memo(({ data, isConnectable }) => {
         isConnectable={isConnectable}
       />
       <Handle
+        id='right'
         type="source"
         position={Position.Right}
         className='handle-right'
-        id="a"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='bottom'
         type="target"
         className='handle-bottom'
         position={Position.Bottom}
-        id="b"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='top'
         type="source"
         className='handle-top'
         position={Position.Top}
-        id="b"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />

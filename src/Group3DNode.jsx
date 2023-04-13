@@ -7,6 +7,7 @@ export default memo(({ data, isConnectable, ...props }) => {
       <div style={{width: data.width, height: data.height, background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4', transform: `rotateX(55deg) rotateY(0deg) rotateZ(-50deg)`}}>
         <div style={{transform: `transform: rotateX(-90deg) rotate(180deg) translateZ(${data.width}px})`}}>{data.label}</div>
       <Handle
+        id='left'
         type="target"
         position={Position.Left}
         style={{ background: '#555' }}
@@ -14,23 +15,23 @@ export default memo(({ data, isConnectable, ...props }) => {
         isConnectable={isConnectable}
       />
       <Handle
+        id='right'
         type="source"
         position={Position.Right}
-        id="a"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='bottom'
         type="target"
         position={Position.Bottom}
-        id="b"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='top'
         type="source"
         position={Position.Top}
-        id="b"
         style={{ background: '#555' }}
         isConnectable={isConnectable}
       />

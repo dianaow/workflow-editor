@@ -9,6 +9,7 @@ export default memo(({ data, isConnectable, selected }) => {
       <NodeResizer color="#4285F4" isVisible={selected} minWidth={30} minHeight={30} />
       <div>{data.label}</div>
       <Handle
+        id='left'
         type="target"
         position={Position.Left}
         style={{ background: '#555', opacity: 0.3 }}
@@ -16,23 +17,23 @@ export default memo(({ data, isConnectable, selected }) => {
         isConnectable={isConnectable}
       />
       <Handle
+        id='right'
         type="source"
         position={Position.Right}
-        id="a"
         style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='bottom'
         type="target"
         position={Position.Bottom}
-        id="b"
         style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       <Handle
+        id='top'
         type="source"
         position={Position.Top}
-        id="b"
         style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />

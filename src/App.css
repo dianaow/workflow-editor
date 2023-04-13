@@ -222,12 +222,21 @@ input[type="file"] {
   border-radius: 2px;
   cursor: pointer;
   margin: 17px 0px 0px 25px;
+  width: auto;
 }
 .btn-svg {
   padding: 4px;
 }
 .btn-label {
   margin: 3px 4px;
+}
+.btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.form-field {
+  padding: 10px 0px;
 }
 
 .updatenode__controls {
@@ -239,5 +248,11 @@ input[type="file"] {
   background-color: white;
   border-radius: 2px;
   padding: 16px;
+  text-align: left;
+  border: 1px solid #ccc;
+}
 
+.form-field label{ 
+  display: inline-block;
+  width: 100px;
 }

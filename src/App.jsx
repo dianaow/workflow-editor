@@ -31,12 +31,12 @@ const MARKER_END = {
   height:20
 }       
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+const isGroup = d => d.type === 'group' || d.type === 'group2DNode' || d.type === 'group3DNode'
+const isNode = d => d.type === 'node' || d.type === 'default2DNode' || d.type === 'default3DNode'
 
 function App() {
   const reactFlowWrapper = useRef(null);
-  const [rawData, setRawData] = useState([]);
+  const [rawData, setRawData] = useState({});
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [toggleState, setToggleState] = useState(false);
@@ -44,11 +44,12 @@ function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
-  const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
-  const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
-  const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
-
   const updateData = (data, toggleState) => {
+   
+    const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
+    const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
+    const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
+  
     let nodes = []
     let edges = []
     data.nodes.map(d => {
@@ -59,11 +60,11 @@ function App() {
           label: d.id, 
           name: d.name
         }, 
-        style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+        style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
         zIndex: -1
       })
 
-      if(d.connectTo.length > 0){
+      if(d.connectTo && d.connectTo.length > 0){
         d.connectTo.map(c => {
           edges.push({
             id: d.id + '-' + c, 
@@ -73,7 +74,8 @@ function App() {
             style: { 
               stroke: '#555'
             },
-            markerEnd: MARKER_END
+            markerEnd: MARKER_END,
+            sourceHandle: 'right'
           })
         })
       }
@@ -83,7 +85,7 @@ function App() {
       if(d.nodes){
         d.nodes.map((d1,i1) => {
           
-          if(d1.connectTo.length > 0){
+          if(d1.connectTo && d1.connectTo.length > 0){
             d1.connectTo.map(c1 => {
               edges.push({
                 id: d1.id + '-' + c1, 
@@ -101,7 +103,7 @@ function App() {
           let rectWidth = 100
           let rectX = 20;
           let idx = 0
-          if(d1.nodes.length > 0){
+          if(d1.nodes && d1.nodes.length > 0){
             let nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length))
             let nrOfColumns = (Math.sqrt(d1.nodes.length) % 1) > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length))
             for (let colIdx = 0; colIdx < nrOfColumns; colIdx++) {
@@ -109,6 +111,7 @@ function App() {
               for (let rowIdx = 0; rowIdx < nrOfRows; rowIdx++) {
                 let d2 = d1.nodes[idx]
                 if(d2){
+                  console.log(d2.id, rowIdx, colIdx)
                   // node with icon within group
                   nodes.push({
                     ...d2,
@@ -119,14 +122,13 @@ function App() {
                       origX: rectX, 
                       origY: rectY,
                       width: 140,
-                      height: 140,
-                      icon: 'PubSub'
+                      height: 140
                     },
                     parentNode: d1.id,
                     extent: toggleState ? null : 'parent',
                     position: { 
-                      x: rectX, 
-                      y: rectY 
+                      x: toggleState ? (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 120): rectX, 
+                      y: toggleState ? (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 115) + 120: rectY
                     },
                     zIndex: 1
                   })
@@ -137,7 +139,7 @@ function App() {
               rectX += rectWidth + 20;
             } 
             d1.nodes.map((d2) => {
-              if(d2.connectTo.length > 0){
+              if(d2.connectTo && d2.connectTo.length > 0){
                 d2.connectTo.map(c2 => {
                   edges.push({
                     id: d2.id + '-' + c2, 
@@ -160,17 +162,17 @@ function App() {
               data: { 
                 label: d1.id, 
                 name: d1.name, 
-                width: nrOfColumns * 120 + 20, 
-                height: nrOfRows * 120 + 20,
+                width: nrOfColumns * (toggleState ? 180 : 120) + 20, 
+                height: nrOfRows * (toggleState ? 180 : 120) + 20,
                 origX: rectXGlobal,
                 origY: 20
               },
-              style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+              style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
               extent: toggleState ? null : 'parent',
               position: { 
-                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
+                x: d1.position ? d1.position.x : toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: d1.position ? d1.position.y : toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
               }, 
               zIndex: 1
             })
@@ -199,14 +201,17 @@ function App() {
               parentNode: d.id,
               extent: toggleState ? null : 'parent',
               position: { 
-                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
+                x: d1.position ? d1.position.x : toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: d1.position ? d1.position.y : toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
               },
               zIndex: 1
             })
-            if(i1 === 0 || i1 === d.nodes.filter(n => n.nodes.length === 0).length -1){
+            // if the next object in array is a group, then increase the x-position, so that the group node is placed without overlap of the previous individual nodes
+            const nextObjIdx = data.nodes[0].nodes.map(n => n.id).indexOf(d1.id) + 1
+            const isGroupNext = data.nodes[0].nodes[nextObjIdx] ? isGroup(data.nodes[0].nodes[nextObjIdx]) : false
+            if(i1 === 0 || isGroupNext){
               rectX += rectWidth + 20
-              rectXGlobal += rectX + 60
+              rectXGlobal += rectX + (toggleState ? 250 : 60)
             }
           }
 
@@ -288,9 +293,11 @@ function App() {
   }
 
   const updateGraph = (updates) => {
-    console.log('after component update', updates)
-    setNodes([...nodes.filter(d => d.id !== selectedGraph.node.id), updates.node]);
+    const selectedNodes = nodes.filter(d => d.id !== selectedGraph.node.id)
+    setNodes([...selectedNodes, updates.node]);
     //setEdges([...edges, updates.edges])
+    const otherData = rawData.filter(d => d.id !== updates.node.id)
+    setRawData({...otherData, ...updates.node})
   }
 
   useEffect(() => {
@@ -348,26 +355,38 @@ function App() {
     []
   );
 
-  const onConnect = useCallback((params) => setEdges((eds) => { 
-    return addEdge(
-    {
-      ...params, 
-      type: 'step', 
-      markerEnd: {
-        type: edgeType === 'line' ? null : MarkerType.ArrowClosed,
-        width: 20,
-        height: 20
-      },
-      markerStart: {
-        type: (edgeType === 'line' || edgeType === 'single-connector') ? null : MarkerType.ArrowClosed,
-        width: 20,
-        height: 20
-      }  
-    }, eds) }), [edgeType]);
+  const onConnect = useCallback((params) => {
+    setEdges((eds) => { 
+      return addEdge({
+        ...params, 
+        id: params.source + '-' + params.target, 
+        type: toggleState ? 'edge3D' : 'step', 
+        markerEnd: {
+          type: edgeType === 'line' ? null : MarkerType.ArrowClosed,
+          width: 20,
+          height: 20
+        },
+        markerStart: {
+          type: (edgeType === 'line' || edgeType === 'single-connector') ? null : MarkerType.ArrowClosed,
+          width: 20,
+          height: 20
+        }  
+      }, eds)
+    })
+
+    let rawDataCopy = {...rawData}
+    const sourceNodeIndex = rawDataCopy.nodes[0].nodes.map(n => n.id).indexOf(params.source)
+    if(sourceNodeIndex >= 0){
+      let sourceNodeConnections = [...rawDataCopy.nodes[0].nodes[sourceNodeIndex].connectTo]
+      rawDataCopy.nodes[0].nodes[sourceNodeIndex].connectTo = sourceNodeConnections.length === 0 ? [params.target] : [...sourceNodeConnections, params.target]
+      setRawData(rawDataCopy)
+    }
+
+  }, [rawData, toggleState, edgeType]);
 
   const onNodeClick = (event, node) => {
     const selectedEdges = edges.filter(e => e.source === node.id || e.target === node.id)
-    setSelectedGraph({node, edges: selectedEdges})
+    setSelectedGraph({node, edges: selectedEdges, display: true})
   }
   
   const onDragOver = useCallback((event) => {
@@ -391,17 +410,32 @@ function App() {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
+
+      let rawDataCopy = {...rawData}
+      if(Object.keys(rawDataCopy).length === 0) rawDataCopy = {nodes: [{nodes: []}]} // if no json has been imported
+      const countNodes = rawDataCopy.nodes[0].nodes.length === 0 ? 0 : rawDataCopy.nodes[0].nodes.filter(isNode).length
+      const countGroups = rawDataCopy.nodes[0].nodes.length === 0 ? 0 : rawDataCopy.nodes[0].nodes.filter(isGroup).length
+
+      const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
+      const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
+
       const newNode = {
-        id: getId(),
-        type: type === 'Group' ? 'group2DNode' : 'default2DNode',
+        id: type === 'Group' ? `viz01-g01-g0${countGroups+1}` : `viz01-g01-u0${countNodes+1}`,
+        type: type === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
         position,
+        name: type,
         data: { name: `${type}`},
-        style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {}
+        style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
+        nodes: [],
+        connectTo: []
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setNodes((nds) => nds.concat(newNode)); // create and add the new node
+
+      rawDataCopy.nodes[0].nodes.push(newNode)
+      setRawData(rawDataCopy) // capture the data of new node and store it in the original json format, for ease of conversion from 2D to 3D and back
     },
-    [reactFlowInstance]
+    [rawData, toggleState, reactFlowInstance]
   );
 
   return (
@@ -446,7 +480,7 @@ function App() {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onNodeDragStop={onNodeDragStop}
+            //onNodeDragStop={onNodeDragStop}
             //selectNodesOnDrag={false}
             minZoom={0.2}
             maxZoom={4}
