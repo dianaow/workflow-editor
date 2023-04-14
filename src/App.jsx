@@ -45,7 +45,6 @@ function App() {
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const updateData = (data, toggleState) => {
-   
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
@@ -111,7 +110,6 @@ function App() {
               for (let rowIdx = 0; rowIdx < nrOfRows; rowIdx++) {
                 let d2 = d1.nodes[idx]
                 if(d2){
-                  console.log(d2.id, rowIdx, colIdx)
                   // node with icon within group
                   nodes.push({
                     ...d2,
@@ -167,7 +165,7 @@ function App() {
                 origX: rectXGlobal,
                 origY: 20
               },
-              style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+              style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
               extent: toggleState ? null : 'parent',
               position: { 
@@ -185,11 +183,11 @@ function App() {
             }
 
           } else {
-            // node with icon without group
+            // node with icon without group OR drag-drop group
             const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
             nodes.push({
               ...d1,
-              type: NODE_TYPE,
+              type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name, 
@@ -200,6 +198,7 @@ function App() {
               },
               parentNode: d.id,
               extent: toggleState ? null : 'parent',
+              style: (d1.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
               position: { 
                 x: d1.position ? d1.position.x : toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
                 y: d1.position ? d1.position.y : toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
