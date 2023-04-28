@@ -48,16 +48,18 @@ function App() {
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
-  
+    console.log(data.nodes)
     let nodes = []
     let edges = []
     data.nodes.map(d => {
+
       nodes.push({
         ...d,
         type: GROUP_NODE_TYPE,
+        id: d.id,
         data: { 
           label: d.id, 
-          name: d.name
+          name: 'Root'
         }, 
         style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
         zIndex: -1
@@ -103,6 +105,11 @@ function App() {
           let rectX = 20;
           let idx = 0
           if(d1.nodes && d1.nodes.length > 0){
+            d1.nodes = d1.nodes.filter((value, index, self) =>
+              index === self.findIndex((t) => (
+                t.id === value.id
+              ))
+            )
             let nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length))
             let nrOfColumns = (Math.sqrt(d1.nodes.length) % 1) > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length))
             for (let colIdx = 0; colIdx < nrOfColumns; colIdx++) {
@@ -125,10 +132,10 @@ function App() {
                     parentNode: d1.id,
                     extent: toggleState ? null : 'parent',
                     position: { 
-                      x: toggleState ? (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 120): rectX, 
-                      y: toggleState ? (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 115) + 120: rectY
+                      x: toggleState ? (nrOfRows === 0 && nrOfColumns === 0 ? rectX : (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 120)) : rectX, 
+                      y: toggleState ? (nrOfRows === 0 && nrOfColumns === 0 ? rectY : (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 115) + 120) : rectY
                     },
-                    zIndex: 1
+                    zIndex: 2
                   })
                 }
                 rectY += rectWidth + 20;
@@ -165,22 +172,26 @@ function App() {
                 origX: rectXGlobal,
                 origY: 20
               },
-              style: {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+              style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
               extent: toggleState ? null : 'parent',
               position: { 
-                x: d1.position ? d1.position.x : toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: d1.position ? d1.position.y : toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
               }, 
               zIndex: 1
             })
-            let conn = edges.filter(e => e.target === d1.id)
-            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-            if(nodesWithSameSource.length === 1) {
+            //let conn = edges.filter(e => e.target === d1.id)
+            //let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+            //let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+            //if(nodesWithSameSource.length === 1) {
               rectXGlobal += nrOfColumns * 120 + 60
               counter += 1
-            }
+            //}
+            // if(d1.name === 'Group'){
+            //   rectXGlobal += (nrOfColumns+1) * 120 + 60
+            //   counter += 1       
+            // }
 
           } else {
             // node with icon without group OR drag-drop group
@@ -200,8 +211,8 @@ function App() {
               extent: toggleState ? null : 'parent',
               style: (d1.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
               position: { 
-                x: d1.position ? d1.position.x : toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: d1.position ? d1.position.y : toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
+                y: toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
               },
               zIndex: 1
             })
@@ -303,7 +314,7 @@ function App() {
     if(Object.keys(rawData).length !== 0){
       updateData(rawData, toggleState)
     }
-  }, [rawData, toggleState])
+  }, [toggleState])
 
   const importData = (e) => {
     const reader = new FileReader();
@@ -323,25 +334,6 @@ function App() {
     a.download = 'export.json';
     a.click();
   }  
-
-  const onNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    []
-  );
-
-  // const onNodeDragStop = useCallback((event, node) => {
-  //   const intersections = reactFlowInstance.getIntersectingNodes(node).map((n) => n.id);
-  //   const groupNode = nodes.find(d => d.id === intersections[0])
-  //   setNodes((ns) =>
-  //     ns.map((n) => ({
-  //       ...n,
-  //       parentNode: groupNode.id,
-  //       extent: n.id === node.id ? 'parent' : null,
-  //       position: n.id === node.id ? {x: 10, y: 10} : n.position,
-  //       positionAbsolute: n.id === node.id ? {x: groupNode.position.x + 10, y: groupNode.position.y + 10} : null
-  //     }))
-  //   );
-  // }, [nodes, reactFlowInstance]);
 
   const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
@@ -396,7 +388,7 @@ function App() {
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-
+     
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow');
 
@@ -412,8 +404,9 @@ function App() {
 
       let rawDataCopy = {...rawData}
       if(Object.keys(rawDataCopy).length === 0) rawDataCopy = {nodes: [{nodes: []}]} // if no json has been imported
-      const countNodes = rawDataCopy.nodes[0].nodes.length === 0 ? 0 : rawDataCopy.nodes[0].nodes.filter(isNode).length
-      const countGroups = rawDataCopy.nodes[0].nodes.length === 0 ? 0 : rawDataCopy.nodes[0].nodes.filter(isGroup).length
+      
+      const countNodes = nodes.length === 0 ? 0 : nodes.filter(isNode).length
+      const countGroups = nodes.length === 0 ? 0 : nodes.filter(isGroup).length
 
       const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
       const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
@@ -423,7 +416,7 @@ function App() {
         type: type === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
         position,
         name: type,
-        data: { name: `${type}`},
+        data: { name: `${type}`, label: `${type}`},
         style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
         nodes: [],
         connectTo: []
@@ -435,6 +428,48 @@ function App() {
       setRawData(rawDataCopy) // capture the data of new node and store it in the original json format, for ease of conversion from 2D to 3D and back
     },
     [rawData, toggleState, reactFlowInstance]
+  );
+
+  const onNodesChange = useCallback(
+    (changes) => {
+      let rawDataCopy = {...rawData}
+      setNodes((nds) => {
+        //get the changed node and all its attributes from original node data
+        const nodeAddToGrp = nds.find(n => n.id === changes[0].id && isNode(n)) || {}
+        //find the group nodes
+        const groupNodes = nds.filter(d => isGroup(d))
+        // iterate over group nodes and find if the moved node position is within the boundaries of any of the group nodes
+        groupNodes.forEach(g => {
+          if(changes[0].position && g.position && Object.keys(nodeAddToGrp).length !== 0){
+            if(changes[0].positionAbsolute.x >= g.position.x && changes[0].positionAbsolute.y >= g.position.y && changes[0].positionAbsolute.x <= g.position.x + g.width && changes[0].positionAbsolute.y <= g.position.y + g.height){
+              nodeAddToGrp.extent = 'parent' // restrict movement to node to within group
+              nodeAddToGrp.parentNode = g.id // modify moved node to indicate its part of a group
+              if(changes[0].position.x === changes[0].positionAbsolute.x) {
+                nodeAddToGrp.position = {x: changes[0].position.x-g.position.x, y: changes[0].position.y-g.position.y} // positional coordinates relative to group
+              } else {
+                nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
+              }
+              nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
+              nodeAddToGrp.zIndex = 2
+              nodeAddToGrp.id = g.id + '-u' + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
+              if(!g.nodes.some(d => d.id === nodeAddToGrp.id)){
+                g.nodes.push(nodeAddToGrp)
+              }
+            }
+          }
+        })
+        if(Object.keys(nodeAddToGrp).length !== 0 && nodeAddToGrp.parentNode){
+          nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...groupNodes] // modify original array of all nodes
+          console.log('modify original array of all nodes', nds)
+          return nds
+        } 
+
+        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...groupNodes]}]} // lone nodes and group nodes
+        return applyNodeChanges(changes, nds)
+      })
+      setRawData(rawDataCopy)
+    },
+    [rawData]
   );
 
   return (
@@ -479,11 +514,9 @@ function App() {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            //onNodeDragStop={onNodeDragStop}
-            //selectNodesOnDrag={false}
             minZoom={0.2}
             maxZoom={4}
-            fitView
+            //fitView
           >
             <Background />
             <Controls />

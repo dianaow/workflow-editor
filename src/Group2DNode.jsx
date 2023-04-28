@@ -5,7 +5,7 @@ import { NodeResizer } from '@reactflow/node-resizer';
 export default memo(({ data, isConnectable, selected }) => {
   return (
     <>
-      <div style={{width: data.width || 100, height: data.height || 100}}>
+      <div style={{width: data.width || 300, height: data.height || 300}}>
       <NodeResizer color="#4285F4" isVisible={selected} minWidth={30} minHeight={30} />
       <div>{data.label}</div>
       <Handle
