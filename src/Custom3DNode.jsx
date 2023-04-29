@@ -55,7 +55,7 @@ export default memo(({ data, isConnectable }) => {
       />
       <Handle
         id='bottom'
-        type="target"
+        type="source"
         className='handle-bottom'
         position={Position.Bottom}
         style={{ background: '#555' }}
@@ -63,7 +63,7 @@ export default memo(({ data, isConnectable }) => {
       />
       <Handle
         id='top'
-        type="source"
+        type="target"
         className='handle-top'
         position={Position.Top}
         style={{ background: '#555' }}

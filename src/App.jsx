@@ -45,25 +45,28 @@ function App() {
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const updateData = (data, toggleState) => {
+    console.log(data)
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
-    console.log(data.nodes)
+
     let nodes = []
     let edges = []
     data.nodes.map(d => {
 
-      nodes.push({
-        ...d,
-        type: GROUP_NODE_TYPE,
-        id: d.id,
-        data: { 
-          label: d.id, 
-          name: 'Root'
-        }, 
-        style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
-        zIndex: -1
-      })
+      if(d.id){
+        nodes.push({
+          ...d,
+          type: GROUP_NODE_TYPE,
+          id: d.id,
+          data: { 
+            label: d.id, 
+            name: 'Root'
+          }, 
+          style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
+          zIndex: -1
+        })
+      }
 
       if(d.connectTo && d.connectTo.length > 0){
         d.connectTo.map(c => {
@@ -76,7 +79,8 @@ function App() {
               stroke: '#555'
             },
             markerEnd: MARKER_END,
-            sourceHandle: 'right'
+            sourceHandle: 'right',
+            targetHandle: 'left'
           })
         })
       }
@@ -96,7 +100,9 @@ function App() {
                 style: { 
                   stroke: '#555'
                 },
-                markerEnd: MARKER_END   
+                markerEnd: MARKER_END,
+                sourceHandle: 'right',
+                targetHandle: 'left'
               })
             })
           }
@@ -120,7 +126,7 @@ function App() {
                   // node with icon within group
                   nodes.push({
                     ...d2,
-                    type: NODE_TYPE,
+                    type: d2.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
                     data: { 
                       label: d2.id, 
                       name: d2.name,
@@ -130,10 +136,11 @@ function App() {
                       height: 140
                     },
                     parentNode: d1.id,
+                    style: {},
                     extent: toggleState ? null : 'parent',
                     position: { 
-                      x: toggleState ? (nrOfRows === 0 && nrOfColumns === 0 ? rectX : (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 120)) : rectX, 
-                      y: toggleState ? (nrOfRows === 0 && nrOfColumns === 0 ? rectY : (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 115) + 120) : rectY
+                      x: toggleState ? (nrOfRows === 1 && nrOfColumns === 1 ? rectX : (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 100)) : rectX, 
+                      y: toggleState ? (nrOfRows === 1 && nrOfColumns === 1 ? rectY : (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 60) + (nrOfRows >= 3 ? 160 : 100)) : rectY
                     },
                     zIndex: 2
                   })
@@ -154,7 +161,9 @@ function App() {
                     style: { 
                       stroke: '#555'
                     },
-                    markerEnd: MARKER_END 
+                    markerEnd: MARKER_END,
+                    sourceHandle: 'right',
+                    targetHandle: 'left'
                   })
                 })
               }
@@ -167,17 +176,17 @@ function App() {
               data: { 
                 label: d1.id, 
                 name: d1.name, 
-                width: nrOfColumns * (toggleState ? 180 : 120) + 20, 
-                height: nrOfRows * (toggleState ? 180 : 120) + 20,
+                width: nrOfColumns * (toggleState ? 140 : 120) + 20, 
+                height: nrOfRows * (toggleState ? 140 : 120) + 20,
                 origX: rectXGlobal,
                 origY: 20
               },
               style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
-              extent: toggleState ? null : 'parent',
+              extent: (!d.id || toggleState) ? null : 'parent',
               position: { 
                 x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? (counter * ((nrOfRows * 120 + 20) * Math.sin(-35 * Math.PI/180)) + 200) : 20
+                y: toggleState ? (counter * ((nrOfRows * 120) * Math.sin(-35 * Math.PI/180))) + 360 : 20
               }, 
               zIndex: 1
             })
@@ -208,11 +217,11 @@ function App() {
                 height: 140
               },
               parentNode: d.id,
-              extent: toggleState ? null : 'parent',
+              extent: (!d.id || toggleState) ? null : 'parent',
               style: (d1.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
               position: { 
                 x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 200) : (20 + 120 * singleNodeCounter)
+                y: toggleState ? (singleNodeCounter === 0 ? 550 : ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 400)) : (20 + 120 * singleNodeCounter)
               },
               zIndex: 1
             })
@@ -221,7 +230,7 @@ function App() {
             const isGroupNext = data.nodes[0].nodes[nextObjIdx] ? isGroup(data.nodes[0].nodes[nextObjIdx]) : false
             if(i1 === 0 || isGroupNext){
               rectX += rectWidth + 20
-              rectXGlobal += rectX + (toggleState ? 250 : 60)
+              rectXGlobal += rectX + 60
             }
           }
 
@@ -239,10 +248,11 @@ function App() {
             let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
             let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
             X = Math.min(...nodesWithSameSource.map(d => d.position.x))
-            let refNode = nodesWithSameSource.find(n => n.position.x === X)
-            if(refNode){
+            let refNodes = nodesWithSameSource.filter(n => n.position.x === X)
+            if(refNodes.length > 0){
+              const refNode = refNodes.slice(-1)[0]
               let targetX = (refNode.data.height * Math.sin(-35 * Math.PI/180) + (refNode.position.y -  Math.tan(-155 * Math.PI/180) * refNode.position.x) - refNode.position.y) / -Math.tan(-155 * Math.PI/180)
-              X = refNode.id === node.id ? refNode.position.x : targetX
+              X = refNode.id === node.id ? refNode.position.x: targetX
               node.position = {x: X, y: refNode.position.y}
             }
           } 
@@ -257,7 +267,7 @@ function App() {
             let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
             let sourceX = Math.max(...sourceNodes.map(d => d.position.x))
             let width = Math.max(...sourceNodes.map(d => d.data.width)) 
-            let X = sourceX + (width + 60) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
+            let X = sourceX + (width) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
             node.position = {x: X, y: node.position.y}
           } 
         } 
@@ -273,7 +283,7 @@ function App() {
             let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
             X = Math.min(...nodesWithSameSource.map(d => d.position.x))
             let refNode = nodesWithSameSource.find(n => n.position.x === X)
-            Y = refNode.id === node.id ? node.position.y : refNode.data.height + 40
+            Y = refNode.id === node.id ? node.position.y : refNode.position.y + refNode.data.height + 40
             node.position = {x: refNode.position.x, y: Y}
           } 
         } 
@@ -291,12 +301,14 @@ function App() {
       })  
     }
 
-    const maxX = Math.max(...nodes.slice(1).map(d => d.position.x))
-    const minX = Math.min(...nodes.slice(1).map(d => d.position.x))
-    const maxY = Math.max(...nodes.slice(1).map(d => d.position.y))
-    const minY = Math.min(...nodes.slice(1).map(d => d.position.y))
-    nodes[0].position = {x: toggleState ? minX * Math.sin(-35 * Math.PI/180) : minX, y: minY}
-    nodes[0].data = { ...nodes[0].data, width: maxX - minX + 300, height:  maxY - minY + 300}
+    if(data.nodes[0].id){
+      const maxX = Math.max(...nodes.slice(1).map(d => d.position.x))
+      const minX = Math.min(...nodes.slice(1).map(d => d.position.x))
+      const maxY = Math.max(...nodes.slice(1).map(d => d.position.y))
+      const minY = Math.min(...nodes.slice(1).map(d => d.position.y))
+      nodes[0].position = {x: minX, y: minY}
+      nodes[0].data = { ...nodes[0].data, width: maxX - minX + 250, height:  maxY - minY + 300}
+    }
 
     setNodes([...nodes]);
     setEdges([...edges])
@@ -354,13 +366,13 @@ function App() {
         type: toggleState ? 'edge3D' : 'step', 
         markerEnd: {
           type: edgeType === 'line' ? null : MarkerType.ArrowClosed,
-          width: 20,
-          height: 20
+          width: 10,
+          height: 10
         },
         markerStart: {
           type: (edgeType === 'line' || edgeType === 'single-connector') ? null : MarkerType.ArrowClosed,
-          width: 20,
-          height: 20
+          width: 10,
+          height: 10
         }  
       }, eds)
     })
@@ -435,23 +447,35 @@ function App() {
       let rawDataCopy = {...rawData}
       setNodes((nds) => {
         //get the changed node and all its attributes from original node data
-        const nodeAddToGrp = nds.find(n => n.id === changes[0].id && isNode(n)) || {}
-        //find the group nodes
-        const groupNodes = nds.filter(d => isGroup(d))
+        const nodeAddToGrp = nds.find(n => n.id === changes[0].id) || {}
+        //find the group nodes (other group nodes if it's a group node being moved)
+        const groupNodes = nds.filter(d => isGroup(d) && d.id !== changes[0].id)
         // iterate over group nodes and find if the moved node position is within the boundaries of any of the group nodes
+        console.log(nds, groupNodes, changes[0].id)
         groupNodes.forEach(g => {
           if(changes[0].position && g.position && Object.keys(nodeAddToGrp).length !== 0){
-            if(changes[0].positionAbsolute.x >= g.position.x && changes[0].positionAbsolute.y >= g.position.y && changes[0].positionAbsolute.x <= g.position.x + g.width && changes[0].positionAbsolute.y <= g.position.y + g.height){
+            let posX = changes[0].positionAbsolute ? changes[0].positionAbsolute.x : changes[0].position.x // have to do this because a group node has no positionAbsolute attributes
+            let posY = changes[0].positionAbsolute ? changes[0].positionAbsolute.y : changes[0].position.y
+            if(posX >= g.position.x && posY >= g.position.y && posX <= g.position.x + g.width && posY <= g.position.y + g.height){
               nodeAddToGrp.extent = 'parent' // restrict movement to node to within group
               nodeAddToGrp.parentNode = g.id // modify moved node to indicate its part of a group
-              if(changes[0].position.x === changes[0].positionAbsolute.x) {
+              if(changes[0].position.x === posX) {
                 nodeAddToGrp.position = {x: changes[0].position.x-g.position.x, y: changes[0].position.y-g.position.y} // positional coordinates relative to group
               } else {
                 nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
               }
               nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
-              nodeAddToGrp.zIndex = 2
-              nodeAddToGrp.id = g.id + '-u' + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
+              nodeAddToGrp.zIndex = 3
+              //check if moved node is a group node
+              const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
+              nodeAddToGrp.id = g.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
+              //also change id and parent id of this group node's children
+              nodeAddToGrp.nodes.forEach(d => {
+                const checkIfGrp = nds.find(n => n.id === d.id && isGroup(n)) || {}
+                d.id = nodeAddToGrp.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") 
+                d.parentNode = nodeAddToGrp.id 
+              })
+              
               if(!g.nodes.some(d => d.id === nodeAddToGrp.id)){
                 g.nodes.push(nodeAddToGrp)
               }
@@ -460,11 +484,16 @@ function App() {
         })
         if(Object.keys(nodeAddToGrp).length !== 0 && nodeAddToGrp.parentNode){
           nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...groupNodes] // modify original array of all nodes
+          nds = nds.filter((value, index, self) =>
+            index === self.findIndex((t) => (
+              t.id === value.id
+            ))
+          )
           console.log('modify original array of all nodes', nds)
           return nds
         } 
 
-        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...groupNodes]}]} // lone nodes and group nodes
+        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d))]}]} // lone nodes and group nodes
         return applyNodeChanges(changes, nds)
       })
       setRawData(rawDataCopy)

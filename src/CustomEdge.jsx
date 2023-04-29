@@ -22,8 +22,8 @@ export default function CustomEdge({
   let p2 = targetY -  Math.tan(-155 * Math.PI/180) * targetX
   //console.log(id, b2-b1, p2-p1)
 
-  let yOffset = Math.sin(-35 * Math.PI/180) * (targetX-sourceX)/2
-  let xOffset = Math.cos(-35 * Math.PI/180) * (targetX-sourceX)/2
+  let yOffset = Math.sin(-35 * Math.PI/180) * (targetX-sourceX)/5
+  let xOffset = Math.cos(-35 * Math.PI/180) * (targetX-sourceX)/5
 
   xOffset = xOffset < 0 ? 0 : xOffset
   yOffset = yOffset > 0 ? 0 : yOffset

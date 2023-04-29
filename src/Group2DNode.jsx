@@ -25,14 +25,14 @@ export default memo(({ data, isConnectable, selected }) => {
       />
       <Handle
         id='bottom'
-        type="target"
+        type="source"
         position={Position.Bottom}
         style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
       />
       <Handle
         id='top'
-        type="source"
+        type="target"
         position={Position.Top}
         style={{ background: '#555', opacity: 0.3 }}
         isConnectable={isConnectable}
