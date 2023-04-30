@@ -45,15 +45,21 @@ function App() {
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const updateData = (data, toggleState) => {
-    console.log(data)
+
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
 
     let nodes = []
     let edges = []
+    let pad = 30
+    let rectWidth = 94 //node width (64px) including padding (to give sufficient gap between nodes)
+    let rectXGlobal = pad //initial padding for the first node placement 
+    let counter = 0 //this is used to count the number of groups within the root node (relevant for 3D view to adjust the node positions to create the 3D perspective)
+    let singleNodeCounter = 1 //this is used to count the number of singles nodes within the root node
+    
     data.nodes.map(d => {
-
+      // add root node, if any. this will always be a group node 
       if(d.id){
         nodes.push({
           ...d,
@@ -64,33 +70,31 @@ function App() {
             name: 'Root'
           }, 
           style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
-          zIndex: -1
+          zIndex: -1 //this root node is the lowest level amongst all other kinds of nodes
         })
       }
+      
+      // if(d.connectTo && d.connectTo.length > 0){
+      //   d.connectTo.map(c => {
+      //     edges.push({
+      //       id: d.id + '-' + c, 
+      //       source: d.id, 
+      //       target: c,
+      //       type: EDGE_TYPE,
+      //       style: { 
+      //         stroke: '#555'
+      //       },
+      //       markerEnd: MARKER_END,
+      //       sourceHandle: 'right',
+      //       targetHandle: 'left'
+      //     })
+      //   })
+      // }
 
-      if(d.connectTo && d.connectTo.length > 0){
-        d.connectTo.map(c => {
-          edges.push({
-            id: d.id + '-' + c, 
-            source: d.id, 
-            target: c,
-            type: EDGE_TYPE,
-            style: { 
-              stroke: '#555'
-            },
-            markerEnd: MARKER_END,
-            sourceHandle: 'right',
-            targetHandle: 'left'
-          })
-        })
-      }
-
-      let rectXGlobal = 20
-      let counter = 0
-      if(d.nodes){
+      if(d.nodes){ //continue adding more elements if there are nested elements within the root node
         d.nodes.map((d1,i1) => {
           
-          if(d1.connectTo && d1.connectTo.length > 0){
+          if(d1.connectTo && d1.connectTo.length > 0){ //add edges if there are connections between elements (single/group) within root node
             d1.connectTo.map(c1 => {
               edges.push({
                 id: d1.id + '-' + c1, 
@@ -107,49 +111,58 @@ function App() {
             })
           }
           
-          let rectWidth = 100
-          let rectX = 20;
-          let idx = 0
-          if(d1.nodes && d1.nodes.length > 0){
+          let rectX = pad; //initial padding for each row within parent group node (d1.id)
+          let idx = 0 //counter to select a node from array of nested nodes
+          if(d1.nodes && d1.nodes.length > 0){ //continue adding more elements if there are nested elements (single/group) within parent
+            //necessary to prevent duplicate nested nodes that arise from the custom onNodesChanges function
             d1.nodes = d1.nodes.filter((value, index, self) =>
               index === self.findIndex((t) => (
                 t.id === value.id
               ))
             )
-            let nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length))
+            //find the number of rows and columns to fit all nested nodes in a grid layout within parent
+            let nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length)) 
             let nrOfColumns = (Math.sqrt(d1.nodes.length) % 1) > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length))
+            let maxY = 0
             for (let colIdx = 0; colIdx < nrOfColumns; colIdx++) {
-              let rectY = 20;
+              let maxWidth = 0
+              let rectY = pad; // start each new column in the same y position (20px of padding)
               for (let rowIdx = 0; rowIdx < nrOfRows; rowIdx++) {
-                let d2 = d1.nodes[idx]
+                let d2 = d1.nodes[idx] //get data of a node
                 if(d2){
-                  // node with icon within group
+                  console.log(d2.nodes)
+                  let nrOfRows1 = d2.nodes ? Math.ceil(Math.sqrt(d2.nodes.length)) : 0
+                  let nrOfColumns1 = d2.nodes ? (Math.sqrt(d2.nodes.length) % 1) > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d2.nodes.length)) : 0
+                  // nested node can either be a group or single node
+                  let width = d2.name === 'Group' ? (nrOfColumns1 * rectWidth) : rectWidth 
                   nodes.push({
                     ...d2,
                     type: d2.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
                     data: { 
                       label: d2.id, 
                       name: d2.name,
-                      origX: rectX, 
-                      origY: rectY,
-                      width: 140,
-                      height: 140
+                      width,
+                      height: d2.name === 'Group' ? (nrOfRows1 * rectWidth) : 64
                     },
+                    style: (d2.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
                     parentNode: d1.id,
-                    style: {},
-                    extent: toggleState ? null : 'parent',
+                    extent: 'parent', //restrict movment of nested node to within parent
                     position: { 
                       x: toggleState ? (nrOfRows === 1 && nrOfColumns === 1 ? rectX : (rectX * Math.cos(-35 * Math.PI/180)) + (rowIdx * 100)) : rectX, 
-                      y: toggleState ? (nrOfRows === 1 && nrOfColumns === 1 ? rectY : (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 120) - (colIdx * 60) + (nrOfRows >= 3 ? 160 : 100)) : rectY
+                      y: toggleState ? (nrOfRows === 1 && nrOfColumns === 1 ? rectY : (rectY * Math.sin(-35 * Math.PI/180)) + (rowIdx * 100) - (colIdx * 80) + (nrOfRows >= 3 ? 160 : 120)) : rectY
                     },
                     zIndex: 2
                   })
+                  if(width > maxWidth) maxWidth = width // find the max width from the subset of nodes in the same column
+                  rectY += d2.name === 'Group' ? (nrOfRows1 * rectWidth) + (pad * 2) : (rectWidth); //increase y-position of the next node in a column
+                  if(rectY > maxY) maxY = rectY // find the max height from the subset of nodes in the same column
                 }
-                rectY += rectWidth + 20;
-                idx += 1
+                idx += 1 //move on to the next node in array to give placement to
               }
-              rectX += rectWidth + 20;
+              rectX += maxWidth;  //increase x-position of the next node in a row
             } 
+
+            //add edges if there are connections between nested nodes
             d1.nodes.map((d2) => {
               if(d2.connectTo && d2.connectTo.length > 0){
                 d2.connectTo.map(c2 => {
@@ -169,59 +182,46 @@ function App() {
               }
             }) 
 
-            //group nodes
+            // the group node has to contain all nested single and group nodes of various sizes
             nodes.push({
               ...d1,
               type: GROUP_NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name, 
-                width: nrOfColumns * (toggleState ? 140 : 120) + 20, 
-                height: nrOfRows * (toggleState ? 140 : 120) + 20,
-                origX: rectXGlobal,
-                origY: 20
+                width: (toggleState? rectX * 1.4 : rectX), 
+                height: (toggleState? maxY * 1.4 : maxY), 
               },
               style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
-              extent: (!d.id || toggleState) ? null : 'parent',
+              extent: !d.id ? null : 'parent',
               position: { 
-                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? (counter * ((nrOfRows * 120) * Math.sin(-35 * Math.PI/180))) + 360 : 20
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal,
+                y: toggleState ? (counter * maxY * Math.sin(-35 * Math.PI/180)) + 330 : pad //(to note: perhaps there is a better way than hardcoding 340px. had to do this to shift all the nodes downwards to prevent the ugly planar jump upwards from 2D to 3D view)
               }, 
               zIndex: 1
             })
-            //let conn = edges.filter(e => e.target === d1.id)
-            //let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-            //let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-            //if(nodesWithSameSource.length === 1) {
-              rectXGlobal += nrOfColumns * 120 + 60
-              counter += 1
-            //}
-            // if(d1.name === 'Group'){
-            //   rectXGlobal += (nrOfColumns+1) * 120 + 60
-            //   counter += 1       
-            // }
+            rectXGlobal += (toggleState? rectX * 1.4 : rectX) + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
+            counter += 1 
 
           } else {
-            // node with icon without group OR drag-drop group
-            const singleNodeCounter = +d1.id.split('-')[2].split('')[2] - 1
+            // node with icon without group OR empty group
+            //(to note: actually seems unlikely to have empty groups, but this may be possible if the user manually contructs the graph)
             nodes.push({
               ...d1,
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.name, 
-                origX: rectXGlobal, 
-                origY: 20 + (120 * singleNodeCounter),
-                width: 140,
-                height: 140
+                name: d1.name,
+                width:  d1.name === 'Group' ? 100 : 64,
+                height: d1.name === 'Group' ? 100 : 64,
               },
               parentNode: d.id,
-              extent: (!d.id || toggleState) ? null : 'parent',
+              extent: !d.id ? null : 'parent',
               style: (d1.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
               position: { 
-                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) : rectXGlobal, 
-                y: toggleState ? (singleNodeCounter === 0 ? 550 : ((20 + (120 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180) + 400)) : (20 + 120 * singleNodeCounter)
+                x: toggleState ? (rectXGlobal * Math.cos(-35 * Math.PI/180)) + (rectWidth * singleNodeCounter * -1) : rectXGlobal, 
+                y: toggleState ? (singleNodeCounter === 1 ? 550 : ((rectWidth * singleNodeCounter * Math.sin(-35 * Math.PI/180)) + 380)) : (rectWidth * singleNodeCounter)
               },
               zIndex: 1
             })
@@ -229,9 +229,10 @@ function App() {
             const nextObjIdx = data.nodes[0].nodes.map(n => n.id).indexOf(d1.id) + 1
             const isGroupNext = data.nodes[0].nodes[nextObjIdx] ? isGroup(data.nodes[0].nodes[nextObjIdx]) : false
             if(i1 === 0 || isGroupNext){
-              rectX += rectWidth + 20
-              rectXGlobal += rectX + 60
+              rectX += rectWidth
+              rectXGlobal += rectX + (pad*2)
             }
+            singleNodeCounter += 1
           }
 
         })
@@ -253,22 +254,24 @@ function App() {
               const refNode = refNodes.slice(-1)[0]
               let targetX = (refNode.data.height * Math.sin(-35 * Math.PI/180) + (refNode.position.y -  Math.tan(-155 * Math.PI/180) * refNode.position.x) - refNode.position.y) / -Math.tan(-155 * Math.PI/180)
               X = refNode.id === node.id ? refNode.position.x: targetX
-              node.position = {x: X, y: refNode.position.y}
+              node.position = {x: X, y: refNode.position.y }
             }
           } 
         } 
       })
-  
+
       nodes.forEach(node => {
         let conn = edges.filter(e => e.target === node.id)
         if(node.type !== GROUP_NODE_TYPE){
           if(conn.length > 0){
-            const singleNodeCounter = +node.id.split('-')[2].split('')[2] - 1
+            const singleNodeCounter = +node.id.split('-')[2].split('')[2]
             let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
             let sourceX = Math.max(...sourceNodes.map(d => d.position.x))
             let width = Math.max(...sourceNodes.map(d => d.data.width)) 
-            let X = sourceX + (width) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? ((20 + (160 * singleNodeCounter)) * Math.sin(-35 * Math.PI/180)) : 0)
-            node.position = {x: X, y: node.position.y}
+            let X = sourceX + (width) + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? (rectWidth * singleNodeCounter * -1) + 240 : 0)
+            let Y = node.position.y  + ((sourceNodes[0].connectTo.length >= 2 && sourceNodes[0].connectTo.every(d => d.includes('u'))) ? 100 : 0)
+            //let X = sourceX + (width)
+            node.position = {x: X, y: Y}
           } 
         } 
       })
@@ -283,7 +286,7 @@ function App() {
             let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
             X = Math.min(...nodesWithSameSource.map(d => d.position.x))
             let refNode = nodesWithSameSource.find(n => n.position.x === X)
-            Y = refNode.id === node.id ? node.position.y : refNode.position.y + refNode.data.height + 40
+            Y = refNode.id === node.id ? node.position.y : refNode.position.y + refNode.data.height + (pad)
             node.position = {x: refNode.position.x, y: Y}
           } 
         } 
@@ -294,7 +297,7 @@ function App() {
         if(node.type !== GROUP_NODE_TYPE){
           if(conn.length > 0){
             let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
-            let X = Math.max(...sourceNodes.map(d => d.position.x)) + Math.max(...sourceNodes.map(d => d.data.width)) + 40
+            let X = Math.max(...sourceNodes.map(d => d.position.x)) + Math.max(...sourceNodes.map(d => d.data.width)) + (pad)
             node.position = {x: X, y: node.position.y}
           } 
         } 
@@ -309,7 +312,7 @@ function App() {
       nodes[0].position = {x: minX, y: minY}
       nodes[0].data = { ...nodes[0].data, width: maxX - minX + 250, height:  maxY - minY + 300}
     }
-
+    console.log('post-processed flat array of nodes to render', nodes)
     setNodes([...nodes]);
     setEdges([...edges])
   }
@@ -436,7 +439,7 @@ function App() {
 
       setNodes((nds) => nds.concat(newNode)); // create and add the new node
 
-      rawDataCopy.nodes[0].nodes.push(newNode)
+      rawDataCopy.nodes[0].nodes.push(newNode) // since the new node has no hierarchy, it is pushed into the json on the same level as the root node
       setRawData(rawDataCopy) // capture the data of new node and store it in the original json format, for ease of conversion from 2D to 3D and back
     },
     [rawData, toggleState, reactFlowInstance]
@@ -446,17 +449,18 @@ function App() {
     (changes) => {
       let rawDataCopy = {...rawData}
       setNodes((nds) => {
-        //get the changed node and all its attributes from original node data
+        //find the changed node
         const nodeAddToGrp = nds.find(n => n.id === changes[0].id) || {}
         //find the group nodes (other group nodes if it's a group node being moved)
         const groupNodes = nds.filter(d => isGroup(d) && d.id !== changes[0].id)
         // iterate over group nodes and find if the moved node position is within the boundaries of any of the group nodes
-        console.log(nds, groupNodes, changes[0].id)
+        // (to note: still do this even if the moved node is already within the boundaries of any group)
         groupNodes.forEach(g => {
           if(changes[0].position && g.position && Object.keys(nodeAddToGrp).length !== 0){
             let posX = changes[0].positionAbsolute ? changes[0].positionAbsolute.x : changes[0].position.x // have to do this because a group node has no positionAbsolute attributes
             let posY = changes[0].positionAbsolute ? changes[0].positionAbsolute.y : changes[0].position.y
             if(posX >= g.position.x && posY >= g.position.y && posX <= g.position.x + g.width && posY <= g.position.y + g.height){
+              console.log('moved node', changes[0].id, g.id)
               nodeAddToGrp.extent = 'parent' // restrict movement to node to within group
               nodeAddToGrp.parentNode = g.id // modify moved node to indicate its part of a group
               if(changes[0].position.x === posX) {
@@ -466,34 +470,26 @@ function App() {
               }
               nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
               nodeAddToGrp.zIndex = 3
-              //check if moved node is a group node
-              const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
-              nodeAddToGrp.id = g.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
-              //also change id and parent id of this group node's children
-              nodeAddToGrp.nodes.forEach(d => {
-                const checkIfGrp = nds.find(n => n.id === d.id && isGroup(n)) || {}
-                d.id = nodeAddToGrp.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") 
-                d.parentNode = nodeAddToGrp.id 
-              })
-              
+              // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
+              // check if moved node is a group node
+              // const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
+              // nodeAddToGrp.id = g.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
+
               if(!g.nodes.some(d => d.id === nodeAddToGrp.id)){
                 g.nodes.push(nodeAddToGrp)
               }
             }
           }
         })
+
         if(Object.keys(nodeAddToGrp).length !== 0 && nodeAddToGrp.parentNode){
-          nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...groupNodes] // modify original array of all nodes
-          nds = nds.filter((value, index, self) =>
-            index === self.findIndex((t) => (
-              t.id === value.id
-            ))
-          )
-          console.log('modify original array of all nodes', nds)
+          nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...groupNodes] // all nodes in a flat structure (single nodes not picked, the picked node (single/group), groups not picked)
+          console.log('dynamic modification of flat array of all nodes', nds)
           return nds
         } 
 
-        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d))]}]} // lone nodes and group nodes
+        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d) && !d.parentNode)]}]} // lone nodes and group nodes that are not nested
+        console.log('modify JSON structure of nodes pre-render', rawDataCopy)
         return applyNodeChanges(changes, nds)
       })
       setRawData(rawDataCopy)
