@@ -44,8 +44,10 @@ export default function CustomEdge({
   const [edgeH2] = getStraightPath({
     sourceX: sourceX + xOffset + xOffset1,
     sourceY: sourceY + yOffset + yOffset1,
-    targetX: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetX + xOffset2 : targetX,
-    targetY: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetY + yOffset2 : targetY
+    //targetX: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetX + xOffset2 : targetX,
+    //targetY: (b1 < b2 && p1 < p2 && sourceY < targetY) ? targetY + yOffset2 : targetY
+    targetX,
+    targetY
   });
 
   const [edgeV] = getStraightPath({
