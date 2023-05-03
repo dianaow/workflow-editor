@@ -10,6 +10,10 @@
   position: relative;
 }
 
+.react-flow_node > div {
+  transform-origin: 0 0;
+}
+
 /* .react-flow__pane {
   transform: rotateX(50deg) rotateY(0deg) rotateZ(-40deg)
 } */

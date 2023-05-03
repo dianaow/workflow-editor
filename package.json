@@ -11,6 +11,7 @@
   "dependencies": {
     "@reactflow/node-resizer": "^2.1.0",
     "dagre": "^0.8.5",
+    "mathjs": "^11.8.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "reactflow": "^11.6.0",

@@ -29,9 +29,9 @@ export default memo(({ data, isConnectable }) => {
 
   return (
     <>
-    <div style={{position: 'relative', width: '64px', height: '64px'}}>
+    <div style={{transformOrigin: '0 0', position: 'relative', width: '64px', height: '64px'}}>
       {/* <div id="node" style={{transform: `translate(20px, -25px)`}}></div> */}
-      <div id="node" style={{transform: `translate(0px, 0px)`}}>
+      <div id="node" style={{transformOrigin: '0 0', transform: `translate(0px, 0px)`}}>
       <IconComponent/>
         <Handle
           id='left'

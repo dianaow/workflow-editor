@@ -4,8 +4,8 @@ import { Handle, Position } from 'reactflow';
 export default memo(({ data, isConnectable, ...props }) => {
   return (
     <>
-      <div style={{width: data.width, height: data.height, background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4', transform: `rotateX(55deg) rotateY(0deg) rotateZ(-50deg)`}}>
-        <div style={{transform: `transform: rotateX(-90deg) rotate(180deg) translateZ(${data.width}px})`}}>{data.label}</div>
+      <div style={{transformOrigin: '0 0', width: data.width, height: data.height, background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4', transform: `rotateX(55deg) rotateY(0deg) rotateZ(-50deg)`}}>
+        <div style={{transformOrigin: '0 0', transform: `transform: rotateX(-90deg) rotate(180deg) translateZ(${data.width}px})`}}>{data.label}</div>
       <Handle
         id='left'
         type="target"
