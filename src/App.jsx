@@ -80,8 +80,7 @@ function translatePointOnRotatedPlane(point) {
   let pointHomogeneous = math.concat(point, [1]);
   let transformedPointHomogeneous = math.multiply(compositeMatrix, pointHomogeneous);
   let transformedPoint = transformedPointHomogeneous['_data']
-  console.log(transformedPoint)
-  console.log(`Transformed point: (${transformedPoint[0]}, ${transformedPoint[1]}, ${transformedPoint[2]})`);
+  //console.log(`Transformed point: (${transformedPoint[0]}, ${transformedPoint[1]}, ${transformedPoint[2]})`);
   return transformedPoint
 }
 
@@ -188,8 +187,8 @@ function App() {
                   // nested node can either be a group or single node
                   let width = d2.name === 'Group' ? (nrOfColumns1 * rectWidth) : rectWidth 
                   let height = d2.name === 'Group' ? (nrOfRows1 * rectWidth) : rectWidth
-                  width = (toggleState && d2.name === 'Group') ? width * 1.38 : width
-                  height = (toggleState && d2.name === 'Group') ? height * 1.38 : height
+                  width = (toggleState && d2.name === 'Group') ? width : width
+                  height = (toggleState && d2.name === 'Group') ? height : height
 
                   let idx1 = 0
                   let rectX1 = pad;
@@ -199,8 +198,8 @@ function App() {
                       for (let rowIdx1 = 0; rowIdx1 < nrOfRows1; rowIdx1++) {
                         let d3 = d2.nodes[idx1] //get data of a node
                        if(d3){
-                        console.log('nested node ' + d3.id + ' inside group ' + d2.id, rowIdx1)
-                        const newPoint = translatePointOnRotatedPlane([rectX1, rectY1, 0])
+                        //console.log('nested node ' + d3.id + ' inside group ' + d2.id, rowIdx1)
+                        const newPoint = translatePointOnRotatedPlane([rectX1 +rectWidth/2 + pad, rectY1 - pad, 0])
                         nodes.push({
                           ...d3,
                           type: d3.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
@@ -227,8 +226,8 @@ function App() {
                     }
                   }
 
-                  console.log('nested node ' + d2.id + ' inside group ' + d1.id)
-                  const newPoint = translatePointOnRotatedPlane([rectX + width/2 + pad, rectY, 0])
+                  //console.log('nested node ' + d2.id + ' inside group ' + d1.id)
+                  const newPoint = translatePointOnRotatedPlane([d2.name === 'Group' ? rectX : rectX + width/2 + pad, rectY, 0])
                   nodes.push({
                     ...d2,
                     type: d2.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
@@ -248,7 +247,7 @@ function App() {
                     zIndex: 1
                   })
                   if(width > maxWidth) maxWidth = width // find the max width from the subset of nodes in the same column
-                  rectY += d2.name === 'Group' ? (nrOfRows1 * rectWidth) + (pad * 2) : (rectWidth); //increase y-position of the next node in a column
+                  rectY += d2.name === 'Group' ? height + (pad * 2) : height; //increase y-position of the next node in a column
                   if(rectY > maxY) maxY = rectY // find the max height from the subset of nodes in the same column
                 }
                 idx += 1 //move on to the next node in array to give placement to
@@ -277,7 +276,7 @@ function App() {
             }) 
 
             // the group node has to contain all nested single and group nodes of various sizes
-            console.log('group node without parent', d1.id)
+            //console.log('group node without parent', d1.id)
             const newPoint = translatePointOnRotatedPlane([rectXGlobal, pad, 0])
             nodes.push({
               ...d1,
@@ -303,9 +302,10 @@ function App() {
             counter += 1 
 
           } else {
+            
             // node with icon without group OR empty group
             //(to note: actually seems unlikely to have empty groups, but this may be possible if the user manually contructs the graph)
-            console.log('lone node or empty group', d1.id)
+            //console.log('lone node or empty group', d1.id)
             const newPoint = translatePointOnRotatedPlane([rectXGlobal + rectWidth, rectWidth * singleNodeCounter, 0])
             nodes.push({
               ...d1,
@@ -316,7 +316,8 @@ function App() {
                 width:  d1.name === 'Group' ? 100 : 64,
                 height: d1.name === 'Group' ? 100 : 64,
                 origX: rectXGlobal,
-                origY: rectWidth * singleNodeCounter
+                origY: rectWidth * singleNodeCounter,
+                type: 'single'
               },
               parentNode: d.id,
               extent: !d.id ? null : 'parent',
@@ -341,62 +342,58 @@ function App() {
       }
     })
 
-    if(toggleState){
-      nodes.forEach(node => {
-        let conn = edges.filter(e => e.target === node.id)
-        let X = 0
-        let Y = 0
-        if(node.type === GROUP_NODE_TYPE){
-          if(conn.length > 0){
-            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-            X = Math.min(...nodesWithSameSource.map(d => d.data.origX))
-            let refNodes = nodesWithSameSource.filter(n => n.data.origX === X)
-            if(refNodes.length > 0){
-              const refNode = refNodes[0]
-              Y = refNode.data.origY + refNode.data.height + pad
-              const newPoint = translatePointOnRotatedPlane([X, Y, 0])
-              X = refNode.id === node.id ? refNode.position.x : newPoint[0]
-              Y = refNode.id === node.id ? refNode.position.y : newPoint[1]
-              node.position = {x: X, y: Y }
-            }
-          } 
-        } 
+    nodes = nodes.filter((value, index, self) =>
+      index === self.findIndex((t) => (
+        t.id === value.id
+      ))
+    )
+    edges = edges.filter((value, index, self) =>
+      index === self.findIndex((t) => (
+        t.source === value.source && t.target === value.target
+      ))
+    )
 
-       let connToMovedNode = edges.filter(d => d.source === node.id)
-      })
+    nodes.forEach(node => {
+      let conn = edges.filter(e => e.target === node.id)
+      if(node.type === GROUP_NODE_TYPE){
+        if(conn.length > 0){
+          let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+          let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+          let X = Math.min(...nodesWithSameSource.map(d => d.data.origX))
+          let refNodes = nodesWithSameSource.filter(n => n.data.origX === X)
+          if(refNodes.length > 0){
+            const refNode = refNodes.slice(-1)[0] // amongst nodes that share the same source connections, select the last node base the coordinate re-calculation upon
+            
+            const Y = refNodes.map(d => d.data.origY + d.data.height + pad).reduce((a, b) => a + b)
+            const newPoint = toggleState ? translatePointOnRotatedPlane([X, Y, 0]) : [X, Y]
+            const x = refNode.id === node.id ? refNode.position.x : newPoint[0]
+            const y = refNode.id === node.id ? refNode.position.y : newPoint[1]
+            node.position = {x, y}
+            node.data.origX = X
+    
+            let connToMovedNode = edges.filter(d => d.source === node.id).map(e => e.target)
+            let movedTargetNodes = nodes.filter(n => connToMovedNode.indexOf(n.id) !== -1)
+            movedTargetNodes.forEach(n => {
+              const X1 = Math.min(X + node.data.width, n.data.origX) + (pad*2) 
+              const newPoint = toggleState ? translatePointOnRotatedPlane([X1 + (pad*2), n.data.origY, 0]) : [X1, n.data.origY]
+              n.position = {x: newPoint[0], y: newPoint[1]}
+            })
+          }
+        } 
+      } 
+    })
 
-    } else {
-      nodes.forEach(node => {
-        let conn = edges.filter(e => e.target === node.id)
-        let X = 0
-        let Y = 0
-        if(node.type === GROUP_NODE_TYPE){
-          if(conn.length > 0){
-            let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-            let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-            X = Math.min(...nodesWithSameSource.map(d => d.position.x))
-            let refNode = nodesWithSameSource.find(n => n.position.x === X)
-            Y = refNode.id === node.id ? node.position.y : refNode.position.y + refNode.data.height + (pad)
-            node.position = {x: refNode.position.x, y: Y}
-          } 
-        } 
-      })
-  
-      nodes.forEach(node => {
-        let conn = edges.filter(e => e.target === node.id)
-        if(node.type !== GROUP_NODE_TYPE){
-          if(conn.length > 0){
-            let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
-            let X = Math.max(...sourceNodes.map(d => d.position.x)) + Math.max(...sourceNodes.map(d => d.data.width)) + (pad)
-            node.position = {x: X, y: node.position.y}
-          } 
-        } 
-      })  
-    }
+    // // shift lone nodes next to last connected group or node to prevent large gaps that occur after manipulating layout
+    // let connectedNodes = nodes.filter(node => node.data.type !== 'single').map(d => d.position.x + d.data.width)
+    // let MAX_X = Math.max(...connectedNodes)
+    // nodes.forEach(node => {
+    //   if(node.data.type === 'single' && node.connectTo.length === 0){
+    //     console.log(node, MAX_X)
+    //     node.position.x = MAX_X + (pad*2)
+    //   }
+    // })
 
     if(data.nodes[0].id){
-      console.log(nodes)
       const maxX = Math.max(...nodes.slice(1).map(d => Math.abs(d.position.x) + d.data.width))
       const maxY = Math.max(...nodes.slice(1).map(d => Math.abs(d.position.y) + d.data.height))
       const newPoint = translatePointOnRotatedPlane([0, 0, 0])
@@ -491,10 +488,62 @@ function App() {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  function addToGroup(nds, changes) {
+    //find the changed node
+    const nodeAddToGrp = nds.find(n => n.id === changes[0].id) || changes[0] || {}
+    //find the group nodes (other group nodes if it's a group node being moved)
+    const groupNodes = nds.filter(d => isGroup(d) && d.id !== changes[0].id && !d.parentNode)
+    //check if the moved node position is within the boundaries of any group node (only without a parent)
+    //since a node can only be nested into one group at a time, there should not be multiple groups which node overlaps with 
+    groupNodes.forEach(g => {
+      // (to note: still do this even if the moved node is already within the boundaries of any group)
+      if(changes[0].position && g.position && Object.keys(nodeAddToGrp).length !== 0){
+        let posX = changes[0].positionAbsolute ? changes[0].positionAbsolute.x : changes[0].position.x // have to do this because a group node has no positionAbsolute attributes
+        let posY = changes[0].positionAbsolute ? changes[0].positionAbsolute.y : changes[0].position.y
+        // option1: only add the node if it is fully fitted within the group
+        //if(posX >= g.position.x && posY >= g.position.y && (posX + nodeAddToGrp.width) <= (g.position.x + g.width) && (posY + nodeAddToGrp.height) <= (g.position.y + g.height)){
+        // option2: add the node if the top-left coordinate is within the group (whole node is not needed to be inside the group)
+        if(posX >= g.position.x && posY >= g.position.y && posX <= (g.position.x + g.width) && posY <= (g.position.y + g.height)){
+          nodeAddToGrp.extent = 'parent' // restrict movement to node to within group
+          nodeAddToGrp.parentNode = g.id // modify moved node to indicate its part of a group
+          if(changes[0].position.x === posX) {
+            nodeAddToGrp.position = {x: changes[0].position.x-g.position.x, y: changes[0].position.y-g.position.y} // positional coordinates relative to group
+          } else {
+            nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
+          }
+          nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
+          nodeAddToGrp.zIndex = 1
+          // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
+          // check if moved node is a group node
+          // const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
+          // nodeAddToGrp.id = g.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
+
+          if(!g.nodes.some(d => d.id === nodeAddToGrp.id)){
+            g.nodes.push(nodeAddToGrp)
+          }
+        }
+      }
+    })
+
+    return nodeAddToGrp
+  }
+
+  function recursiveFindNode(input, nodeAddToGrp) {
+    for (var i = 0, l = input.length; i < l; i++) {
+        var current = input[i];
+        current.id === nodeAddToGrp.id
+        current = {...nodeAddToGrp}
+        if (current.nodes && current.nodes.length > 0) {
+          recursiveFindNode(current.nodes, nodeAddToGrp);
+        };
+    };
+    return input
+  };
+
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-     
+      console.log('on drop')
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow');
 
@@ -525,12 +574,18 @@ function App() {
         data: { name: `${type}`, label: `${type}`},
         style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
         nodes: [],
-        connectTo: []
+        connectTo: [],
+        width: 100,
+        height: 100
       };
 
-      setNodes((nds) => nds.concat(newNode)); // create and add the new node
+      setNodes((nds) => {
+        let newNodesChanged = {...newNode}
+        if(nds.length > 0) newNodesChanged = addToGroup(nds, [{...newNode}]) 
+        rawDataCopy.nodes[0].nodes.push(newNodesChanged) // since the new node has no hierarchy, it is pushed into the json on the same level as the root node
+        return nds.concat(newNodesChanged)
+      }); // create and add the new node
 
-      rawDataCopy.nodes[0].nodes.push(newNode) // since the new node has no hierarchy, it is pushed into the json on the same level as the root node
       setRawData(rawDataCopy) // capture the data of new node and store it in the original json format, for ease of conversion from 2D to 3D and back
     },
     [rawData, toggleState, reactFlowInstance]
@@ -538,53 +593,23 @@ function App() {
 
   const onNodesChange = useCallback(
     (changes) => {
+      console.log('on change')
       let rawDataCopy = {...rawData}
       setNodes((nds) => {
-        //find the changed node
-        const nodeAddToGrp = nds.find(n => n.id === changes[0].id) || {}
-        //find the group nodes (other group nodes if it's a group node being moved)
-        const groupNodes = nds.filter(d => isGroup(d) && d.id !== changes[0].id && !d.parentNode)
-        //check if the moved node position is within the boundaries of any group node (only without a parent)
-        //since a node can only be nested into one group at a time, there should not be multiple groups which node overlaps with 
-        groupNodes.forEach(g => {
-          // (to note: still do this even if the moved node is already within the boundaries of any group)
-          if(changes[0].position && g.position && Object.keys(nodeAddToGrp).length !== 0){
-            let posX = changes[0].positionAbsolute ? changes[0].positionAbsolute.x : changes[0].position.x // have to do this because a group node has no positionAbsolute attributes
-            let posY = changes[0].positionAbsolute ? changes[0].positionAbsolute.y : changes[0].position.y
-            // option1: only add the node if it is fully fitted within the group
-            //if(posX >= g.position.x && posY >= g.position.y && (posX + nodeAddToGrp.width) <= (g.position.x + g.width) && (posY + nodeAddToGrp.height) <= (g.position.y + g.height)){
-            // option2: add the node if the top-left coordinate is within the group (whole node is not needed to be inside the group)
-            if(posX >= g.position.x && posY >= g.position.y && posX <= (g.position.x + g.width) && posY <= (g.position.y + g.height)){
-              nodeAddToGrp.extent = 'parent' // restrict movement to node to within group
-              nodeAddToGrp.parentNode = g.id // modify moved node to indicate its part of a group
-              if(changes[0].position.x === posX) {
-                nodeAddToGrp.position = {x: changes[0].position.x-g.position.x, y: changes[0].position.y-g.position.y} // positional coordinates relative to group
-              } else {
-                nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
-              }
-              nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
-              nodeAddToGrp.zIndex = 1
-              // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
-              // check if moved node is a group node
-              // const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
-              // nodeAddToGrp.id = g.id + (Object.keys(checkIfGrp).length !== 0 ? '-g' :  '-u') + changes[0].id.split('-')[changes[0].id.split('-').length-1].replace(/[^0-9]/g,"") // change id to indicate its part of group
-
-              if(!g.nodes.some(d => d.id === nodeAddToGrp.id)){
-                g.nodes.push(nodeAddToGrp)
-              }
-            }
-          }
-        })
+        
+        const nodeAddToGrp = addToGroup(nds, changes) 
 
         if(Object.keys(nodeAddToGrp).length !== 0 && nodeAddToGrp.parentNode){
           nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...nds.filter(d => isGroup(d) && d.id !== changes[0].id)] // all nodes in a flat structure (single nodes not picked, the picked node (single/group), groups not picked)
-          rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d) && !d.parentNode)]}]} // lone nodes and group nodes that are not nested
+          // lone nodes and group nodes that are not nested
+          rawDataCopy = recursiveFindNode({...rawDataCopy}, {...nodeAddToGrp})
           console.log('dynamic modification of flat array of all nodes', nds)
           console.log('modify JSON structure of nodes pre-render', rawDataCopy)
           return nds
         } 
 
-        rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d) && !d.parentNode)]}]} // lone nodes and group nodes that are not nested
+        //rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d) && !d.parentNode)]}]} // lone nodes and group nodes that are not nested (commented out because the original sequential order of nodes and groups have to be maintained)
+        rawDataCopy = recursiveFindNode({...rawDataCopy}, {...nodeAddToGrp})
         return applyNodeChanges(changes, nds)
       })
       setRawData(rawDataCopy)

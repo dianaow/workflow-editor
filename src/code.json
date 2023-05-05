@@ -9,12 +9,6 @@
      "lastUpdate": "2022-12-05T13:15:30Z",
      "nodes": [
         {
-           "id": "viz01-g01",
-           "name": "Cloud",
-           "type": "group",
-           "category": "group",
-           "connectTo": [],
-           "otherProperties": "...",
            "nodes": [
               {
                  "id": "viz01-g01-u01",
