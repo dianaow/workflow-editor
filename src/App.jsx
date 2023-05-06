@@ -94,7 +94,7 @@ function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
-  const updateData = (data, toggleState) => {
+  const updateData = (data, toggleState, currentNodes) => {
 
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
@@ -187,8 +187,8 @@ function App() {
                   // nested node can either be a group or single node
                   let width = d2.name === 'Group' ? (nrOfColumns1 * rectWidth) : rectWidth 
                   let height = d2.name === 'Group' ? (nrOfRows1 * rectWidth) : rectWidth
-                  width = (toggleState && d2.name === 'Group') ? width : width
-                  height = (toggleState && d2.name === 'Group') ? height : height
+                  //width = (toggleState && d2.name === 'Group') ? width : width
+                  //height = (toggleState && d2.name === 'Group') ? height : height
 
                   let idx1 = 0
                   let rectX1 = pad;
@@ -353,6 +353,56 @@ function App() {
       ))
     )
 
+    // if(toggleState){
+    //   nodes.forEach(node => {
+    //     const refNode = currentNodes.find(d => d.id === node.id)
+    //     let width = refNode.data.name === 'Group' ? refNode.data.width * 1.5 : refNode.data.width
+    //     let height = refNode.data.name === 'Group' ? refNode.data.height* 1.5 : refNode.data.height
+    //     const newPoint = translatePointOnRotatedPlane([refNode.positionOrig.x, refNode.positionOrig.y, 0])
+    //     node.position = {x: newPoint[0], y: newPoint[1]}
+    //   })
+    // } else {
+    //   nodes.forEach(node => {
+    //     let conn = edges.filter(e => e.target === node.id)
+    //     if(node.type === GROUP_NODE_TYPE){
+    //       if(conn.length > 0){
+    //         let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
+    //         let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
+    //         let X = Math.min(...nodesWithSameSource.map(d => d.position.x))
+    //         let refNodes = nodesWithSameSource.filter(n => n.position.x === X)
+    //         if(refNodes.length > 0){
+    //           const refNode = refNodes.slice(-1)[0] // amongst nodes that share the same source connections, select the last node base the coordinate re-calculation upon
+              
+    //           const Y = refNodes.map(d => d.data.origY + d.data.height + pad).reduce((a, b) => a + b)
+    //           const x = refNode.id === node.id ? refNode.position.x : X
+    //           const y = refNode.id === node.id ? refNode.position.y : Y
+    //           node.position = {x, y}
+    //           node.positionOrig = {x, y}
+  
+    //           let connToMovedNode = edges.filter(d => d.source === node.id).map(e => e.target)
+    //           let movedTargetNodes = nodes.filter(n => connToMovedNode.indexOf(n.id) !== -1)
+
+    //           if(movedTargetNodes.length > 0){
+    //             movedTargetNodes.forEach(n => {
+    //               const X1 = Math.min(node.position.x + node.data.width, n.data.origX) + (pad*2) 
+    //               n.position = {x: X1, y: n.data.origY}
+    //             })
+    //           }
+    //         }
+    //       } 
+    //     } else {
+    //       let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
+    //       if(sourceNodes.length > 0){
+    //         let sourceNode = sourceNodes.slice(-1)[0]
+    //         node.position = {x: sourceNode.position.x + sourceNode.data.width + pad, y: node.position.y}
+    //         node.positionOrig = {...node.position}
+    //       } else {
+    //         node.positionOrig = {...node.position}
+    //       }
+    //     } 
+    //   })
+    // }
+
     nodes.forEach(node => {
       let conn = edges.filter(e => e.target === node.id)
       if(node.type === GROUP_NODE_TYPE){
@@ -366,22 +416,27 @@ function App() {
             
             const Y = refNodes.map(d => d.data.origY + d.data.height + pad).reduce((a, b) => a + b)
             const newPoint = toggleState ? translatePointOnRotatedPlane([X, Y, 0]) : [X, Y]
-            const x = refNode.id === node.id ? refNode.position.x : newPoint[0]
+            const x = refNode.id === node.id ? refNode.position.x : newPoint[0] 
             const y = refNode.id === node.id ? refNode.position.y : newPoint[1]
             node.position = {x, y}
             node.data.origX = X
-    
+
             let connToMovedNode = edges.filter(d => d.source === node.id).map(e => e.target)
             let movedTargetNodes = nodes.filter(n => connToMovedNode.indexOf(n.id) !== -1)
-            movedTargetNodes.forEach(n => {
-              const X1 = Math.min(X + node.data.width, n.data.origX) + (pad*2) 
-              const newPoint = toggleState ? translatePointOnRotatedPlane([X1 + (pad*2), n.data.origY, 0]) : [X1, n.data.origY]
-              n.position = {x: newPoint[0], y: newPoint[1]}
-            })
+            console.log(refNodes, node, movedTargetNodes)
+          
+            if(!toggleState && movedTargetNodes.length > 0){
+              movedTargetNodes.forEach(n => {
+                const X1 = Math.min(node.position.x + node.data.width, n.data.origX) + (pad*2) 
+                const newPoint = toggleState ? translatePointOnRotatedPlane([X1 + (pad*2), n.data.origY, 0]) : [X1, n.data.origY]
+                n.position = {x: newPoint[0], y: newPoint[1]}
+              })
+            }
           }
         } 
       } 
     })
+
 
     // // shift lone nodes next to last connected group or node to prevent large gaps that occur after manipulating layout
     // let connectedNodes = nodes.filter(node => node.data.type !== 'single').map(d => d.position.x + d.data.width)
@@ -400,7 +455,7 @@ function App() {
       nodes[0].position = {x: newPoint[0], y: newPoint[1]}
       nodes[0].data = { ...nodes[0].data, width: maxX + rectWidth + pad + nodes.slice(-1)[0].data.width, height: maxY  + pad}
     }
-    console.log('post-processed flat array of nodes to render', nodes)
+    console.log('post-processed flat array of nodes to render', nodes, edges)
     setNodes([...nodes]);
     setEdges([...edges])
   }
@@ -415,7 +470,7 @@ function App() {
 
   useEffect(() => {
     if(Object.keys(rawData).length !== 0){
-      updateData(rawData, toggleState)
+      updateData(rawData, toggleState, nodes)
     }
   }, [toggleState])
 
@@ -511,6 +566,7 @@ function App() {
           } else {
             nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
           }
+          nodeAddToGrp.positionOrig = {...nodeAddToGrp.position}
           nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
           nodeAddToGrp.zIndex = 1
           // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
@@ -570,6 +626,7 @@ function App() {
         id: type === 'Group' ? `viz01-g01-g0${countGroups+1}` : `viz01-g01-u0${countNodes+1}`,
         type: type === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
         position,
+        positionOrig: position,
         name: type,
         data: { name: `${type}`, label: `${type}`},
         style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
