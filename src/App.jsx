@@ -35,6 +35,25 @@ const MARKER_END = {
 const isGroup = d => d.type === 'group' || d.type === 'group2DNode' || d.type === 'group3DNode'
 const isNode = d => d.type === 'node' || d.type === 'default2DNode' || d.type === 'default3DNode'
 
+function findConnectedNodes(json) {
+  const nodes = json[0].nodes;
+  const connections = {};
+  for (const node of nodes) {
+    for (const otherNode of nodes) {
+      if (node !== otherNode) {
+        if (node.connectTo.includes(otherNode.id)) {
+          if (connections[node.id]) {
+            connections[node.id].push(otherNode.id);
+          } else {
+            connections[node.id] = [otherNode.id];
+          }
+        }
+      }
+    }
+  }
+  return connections;
+}
+
 function translatePointOnRotatedPlane(point) {
   // Define the initial point coordinates and rotation angles in degrees
   let rotateX = 55;
@@ -109,6 +128,8 @@ function App() {
     let rectXGlobal = pad //initial padding for the first node placement 
     let singleNodeCounter = 1 //this is used to count the number of singles nodes within the root node
     
+    const connectedNodes = Object.entries(findConnectedNodes(data.nodes))
+    console.log(connectedNodes)
     data.nodes.map(d => {
       // add root node, if any. this will always be a group node 
       if(d.id){
@@ -124,24 +145,7 @@ function App() {
           zIndex: -1 //this root node is the lowest level amongst all other kinds of nodes
         })
       }
-      
-      // if(d.connectTo && d.connectTo.length > 0){
-      //   d.connectTo.map(c => {
-      //     edges.push({
-      //       id: d.id + '-' + c, 
-      //       source: d.id, 
-      //       target: c,
-      //       type: EDGE_TYPE,
-      //       style: { 
-      //         stroke: '#555'
-      //       },
-      //       markerEnd: MARKER_END,
-      //       sourceHandle: 'right',
-      //       targetHandle: 'left'
-      //     })
-      //   })
-      // }
-
+    
       if(d.nodes){ //continue adding more elements if there are nested elements within the root node
         d.nodes.map((d1,i1) => {
           
@@ -187,8 +191,6 @@ function App() {
                   // nested node can either be a group or single node
                   let width = d2.name === 'Group' ? (nrOfColumns1 * rectWidth) : rectWidth 
                   let height = d2.name === 'Group' ? (nrOfRows1 * rectWidth) : rectWidth
-                  //width = (toggleState && d2.name === 'Group') ? width : width
-                  //height = (toggleState && d2.name === 'Group') ? height : height
 
                   let idx1 = 0
                   let rectX1 = pad;
@@ -277,7 +279,36 @@ function App() {
 
             // the group node has to contain all nested single and group nodes of various sizes
             //console.log('group node without parent', d1.id)
-            const newPoint = translatePointOnRotatedPlane([rectXGlobal, pad, 0])
+            const sameSourceConn = connectedNodes.find(d => d[1].indexOf(d1.id) !== -1)
+            const connNodes = nodes.filter(d => sameSourceConn[1].indexOf(d.id) !== -1)
+            let X = []
+            let Y = []
+            let X_3d = []
+            let Y_3d = []
+            if(connNodes.length > 0){
+              const refNode = connNodes.slice(-1)[0]
+              const totalY = connNodes.filter(d => d.id !== d1.id).map(d => d.data.height + pad).reduce((a, b) => a + b, 0) + pad
+              if(d1.id !== refNode.id) {
+                X = refNode.position.x
+                Y = totalY
+                X_3d = refNode.position.x + rectWidth * 1.5
+                Y_3d = totalY * 1.5
+              } else {
+                X = refNode.position.x
+                Y = refNode.position.y
+                X_3d = refNode.position.x + rectWidth * 1.5
+                Y_3d = refNode.position.y
+              }
+            } else {
+              const sourceID = edges.find(d => d.target === d1.id).source
+              const source = nodes.find(d => d.id === sourceID)
+              X = rectXGlobal
+              Y = pad
+              X_3d = rectXGlobal + (source.category === 'group' ? source.data.width/2 : 0) + (rectWidth * 1.5)
+              Y_3d = pad
+            }
+            const newPoint = translatePointOnRotatedPlane([X_3d, Y_3d, 0])
+            const refNode = currentNodes ? currentNodes.find(d => d.id === d1.id) : []
             nodes.push({
               ...d1,
               type: GROUP_NODE_TYPE,
@@ -285,20 +316,24 @@ function App() {
                 label: d1.id, 
                 name: d1.name, 
                 width: rectX, 
-                height: maxY, 
-                origX: rectXGlobal,
-                origY: pad
+                height: maxY
               },
               style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
               extent: !d.id ? null : 'parent',
               position: { 
-                x: toggleState ? newPoint[0] : rectXGlobal,
-                y: toggleState ? newPoint[1] : pad //(to note: perhaps there is a better way than hardcoding 340px. had to do this to shift all the nodes downwards to prevent the ugly planar jump upwards from 2D to 3D view)
+                x: (toggleState && currentNodes) ? refNode.position3D.x : X,
+                y: (toggleState && currentNodes) ? refNode.position3D.y : Y
               }, 
+              position3D: {
+                x: newPoint[0],
+                y: newPoint[1]
+              },
               zIndex: 1
             })
-            rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
+            if(connNodes.length === 0) {
+              rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
+            }
             counter += 1 
 
           } else {
@@ -315,9 +350,7 @@ function App() {
                 name: d1.name,
                 width:  d1.name === 'Group' ? 100 : 64,
                 height: d1.name === 'Group' ? 100 : 64,
-                origX: rectXGlobal,
-                origY: rectWidth * singleNodeCounter,
-                type: 'single'
+                type: 'single',
               },
               parentNode: d.id,
               extent: !d.id ? null : 'parent',
@@ -352,101 +385,6 @@ function App() {
         t.source === value.source && t.target === value.target
       ))
     )
-
-    // if(toggleState){
-    //   nodes.forEach(node => {
-    //     const refNode = currentNodes.find(d => d.id === node.id)
-    //     let width = refNode.data.name === 'Group' ? refNode.data.width * 1.5 : refNode.data.width
-    //     let height = refNode.data.name === 'Group' ? refNode.data.height* 1.5 : refNode.data.height
-    //     const newPoint = translatePointOnRotatedPlane([refNode.positionOrig.x, refNode.positionOrig.y, 0])
-    //     node.position = {x: newPoint[0], y: newPoint[1]}
-    //   })
-    // } else {
-    //   nodes.forEach(node => {
-    //     let conn = edges.filter(e => e.target === node.id)
-    //     if(node.type === GROUP_NODE_TYPE){
-    //       if(conn.length > 0){
-    //         let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-    //         let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-    //         let X = Math.min(...nodesWithSameSource.map(d => d.position.x))
-    //         let refNodes = nodesWithSameSource.filter(n => n.position.x === X)
-    //         if(refNodes.length > 0){
-    //           const refNode = refNodes.slice(-1)[0] // amongst nodes that share the same source connections, select the last node base the coordinate re-calculation upon
-              
-    //           const Y = refNodes.map(d => d.data.origY + d.data.height + pad).reduce((a, b) => a + b)
-    //           const x = refNode.id === node.id ? refNode.position.x : X
-    //           const y = refNode.id === node.id ? refNode.position.y : Y
-    //           node.position = {x, y}
-    //           node.positionOrig = {x, y}
-  
-    //           let connToMovedNode = edges.filter(d => d.source === node.id).map(e => e.target)
-    //           let movedTargetNodes = nodes.filter(n => connToMovedNode.indexOf(n.id) !== -1)
-
-    //           if(movedTargetNodes.length > 0){
-    //             movedTargetNodes.forEach(n => {
-    //               const X1 = Math.min(node.position.x + node.data.width, n.data.origX) + (pad*2) 
-    //               n.position = {x: X1, y: n.data.origY}
-    //             })
-    //           }
-    //         }
-    //       } 
-    //     } else {
-    //       let sourceNodes = nodes.filter(n => conn.map(c => c.source).indexOf(n.id) !== -1)
-    //       if(sourceNodes.length > 0){
-    //         let sourceNode = sourceNodes.slice(-1)[0]
-    //         node.position = {x: sourceNode.position.x + sourceNode.data.width + pad, y: node.position.y}
-    //         node.positionOrig = {...node.position}
-    //       } else {
-    //         node.positionOrig = {...node.position}
-    //       }
-    //     } 
-    //   })
-    // }
-
-    nodes.forEach(node => {
-      let conn = edges.filter(e => e.target === node.id)
-      if(node.type === GROUP_NODE_TYPE){
-        if(conn.length > 0){
-          let sameSourceConns = edges.filter(e => conn.map(c => c.source).indexOf(e.source) !== -1).map(e => e.target)
-          let nodesWithSameSource = nodes.filter(n => sameSourceConns.indexOf(n.id) !== -1)
-          let X = Math.min(...nodesWithSameSource.map(d => d.data.origX))
-          let refNodes = nodesWithSameSource.filter(n => n.data.origX === X)
-          if(refNodes.length > 0){
-            const refNode = refNodes.slice(-1)[0] // amongst nodes that share the same source connections, select the last node base the coordinate re-calculation upon
-            
-            const Y = refNodes.map(d => d.data.origY + d.data.height + pad).reduce((a, b) => a + b)
-            const newPoint = toggleState ? translatePointOnRotatedPlane([X, Y, 0]) : [X, Y]
-            const x = refNode.id === node.id ? refNode.position.x : newPoint[0] 
-            const y = refNode.id === node.id ? refNode.position.y : newPoint[1]
-            node.position = {x, y}
-            node.data.origX = X
-
-            let connToMovedNode = edges.filter(d => d.source === node.id).map(e => e.target)
-            let movedTargetNodes = nodes.filter(n => connToMovedNode.indexOf(n.id) !== -1)
-            console.log(refNodes, node, movedTargetNodes)
-          
-            if(!toggleState && movedTargetNodes.length > 0){
-              movedTargetNodes.forEach(n => {
-                const X1 = Math.min(node.position.x + node.data.width, n.data.origX) + (pad*2) 
-                const newPoint = toggleState ? translatePointOnRotatedPlane([X1 + (pad*2), n.data.origY, 0]) : [X1, n.data.origY]
-                n.position = {x: newPoint[0], y: newPoint[1]}
-              })
-            }
-          }
-        } 
-      } 
-    })
-
-
-    // // shift lone nodes next to last connected group or node to prevent large gaps that occur after manipulating layout
-    // let connectedNodes = nodes.filter(node => node.data.type !== 'single').map(d => d.position.x + d.data.width)
-    // let MAX_X = Math.max(...connectedNodes)
-    // nodes.forEach(node => {
-    //   if(node.data.type === 'single' && node.connectTo.length === 0){
-    //     console.log(node, MAX_X)
-    //     node.position.x = MAX_X + (pad*2)
-    //   }
-    // })
 
     if(data.nodes[0].id){
       const maxX = Math.max(...nodes.slice(1).map(d => Math.abs(d.position.x) + d.data.width))
@@ -566,7 +504,6 @@ function App() {
           } else {
             nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
           }
-          nodeAddToGrp.positionOrig = {...nodeAddToGrp.position}
           nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
           nodeAddToGrp.zIndex = 1
           // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
@@ -612,6 +549,7 @@ function App() {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
+      const newPoint = translatePointOnRotatedPlane([position.x, position.y, 0])
 
       let rawDataCopy = {...rawData}
       if(Object.keys(rawDataCopy).length === 0) rawDataCopy = {nodes: [{nodes: []}]} // if no json has been imported
@@ -621,12 +559,12 @@ function App() {
 
       const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
       const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
-
+      
       const newNode = {
         id: type === 'Group' ? `viz01-g01-g0${countGroups+1}` : `viz01-g01-u0${countNodes+1}`,
         type: type === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
         position,
-        positionOrig: position,
+        position3D: [newPoint[0], newPoint[1]],
         name: type,
         data: { name: `${type}`, label: `${type}`},
         style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
