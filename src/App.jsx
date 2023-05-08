@@ -127,9 +127,10 @@ function App() {
     let rectWidth = toggleState ? (box + pad) * 1.5 : (box + pad) //node width (64px) including padding (to give sufficient gap between nodes)
     let rectXGlobal = pad //initial padding for the first node placement 
     let singleNodeCounter = 1 //this is used to count the number of singles nodes within the root node
-    
+    let rectXGlobal3D = pad
+
     const connectedNodes = Object.entries(findConnectedNodes(data.nodes))
-    console.log(connectedNodes)
+
     data.nodes.map(d => {
       // add root node, if any. this will always be a group node 
       if(d.id){
@@ -280,7 +281,12 @@ function App() {
             // the group node has to contain all nested single and group nodes of various sizes
             //console.log('group node without parent', d1.id)
             const sameSourceConn = connectedNodes.find(d => d[1].indexOf(d1.id) !== -1)
-            const connNodes = nodes.filter(d => sameSourceConn[1].indexOf(d.id) !== -1)
+            let connNodes = sameSourceConn ? nodes.filter(d => sameSourceConn[1].indexOf(d.id) !== -1) : []
+            connNodes = connNodes.filter((value, index, self) =>
+              index === self.findIndex((t) => (
+                t.id === value.id
+              ))
+            )
             let X = []
             let Y = []
             let X_3d = []
@@ -300,15 +306,16 @@ function App() {
                 Y_3d = refNode.position.y
               }
             } else {
-              const sourceID = edges.find(d => d.target === d1.id).source
-              const source = nodes.find(d => d.id === sourceID)
               X = rectXGlobal
               Y = pad
-              X_3d = rectXGlobal + (source.category === 'group' ? source.data.width/2 : 0) + (rectWidth * 1.5)
+              X_3d = rectXGlobal3D
               Y_3d = pad
             }
+            const newPoint1 = translatePointOnRotatedPlane([X, Y, 0])
             const newPoint = translatePointOnRotatedPlane([X_3d, Y_3d, 0])
             const refNode = currentNodes ? currentNodes.find(d => d.id === d1.id) : []
+            //const newPoint = translatePointOnRotatedPlane([rectXGlobal, pad, 0])
+
             nodes.push({
               ...d1,
               type: GROUP_NODE_TYPE,
@@ -321,9 +328,13 @@ function App() {
               style: toggleState ? {} : {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' },
               parentNode: d.id,
               extent: !d.id ? null : 'parent',
+              // position: { 
+              //   x: toggleState ? newPoint[0] : rectXGlobal, 
+              //   y: toggleState ? newPoint[1] : pad
+              // }, 
               position: { 
-                x: (toggleState && currentNodes) ? refNode.position3D.x : X,
-                y: (toggleState && currentNodes) ? refNode.position3D.y : Y
+                x: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.x : newPoint[0]) : X,
+                y: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.y : newPoint[1]) : Y
               }, 
               position3D: {
                 x: newPoint[0],
@@ -333,6 +344,7 @@ function App() {
             })
             if(connNodes.length === 0) {
               rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
+              rectXGlobal3D += (rectX * 1.5) + (pad * 2)
             }
             counter += 1 
 
@@ -341,7 +353,7 @@ function App() {
             // node with icon without group OR empty group
             //(to note: actually seems unlikely to have empty groups, but this may be possible if the user manually contructs the graph)
             //console.log('lone node or empty group', d1.id)
-            const newPoint = translatePointOnRotatedPlane([rectXGlobal + rectWidth, rectWidth * singleNodeCounter, 0])
+            const newPoint = translatePointOnRotatedPlane([rectXGlobal + rectWidth/2, rectWidth * singleNodeCounter, 0])
             nodes.push({
               ...d1,
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
@@ -367,6 +379,7 @@ function App() {
             if(i1 === 0 || isGroupNext){
               rectX += rectWidth
               rectXGlobal += rectX + (pad*2)
+              rectXGlobal3D += rectX + (pad*2) 
             }
             singleNodeCounter += 1
           }
@@ -549,7 +562,6 @@ function App() {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      const newPoint = translatePointOnRotatedPlane([position.x, position.y, 0])
 
       let rawDataCopy = {...rawData}
       if(Object.keys(rawDataCopy).length === 0) rawDataCopy = {nodes: [{nodes: []}]} // if no json has been imported
@@ -564,7 +576,7 @@ function App() {
         id: type === 'Group' ? `viz01-g01-g0${countGroups+1}` : `viz01-g01-u0${countNodes+1}`,
         type: type === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
         position,
-        position3D: [newPoint[0], newPoint[1]],
+        //position3D: [newPoint[0], newPoint[1]],
         name: type,
         data: { name: `${type}`, label: `${type}`},
         style: type === 'Group' ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
