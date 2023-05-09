@@ -219,7 +219,7 @@ function App() {
                             x: toggleState ? newPoint[0] : rectX1, 
                             y: toggleState ? newPoint[1] : rectY1
                           },
-                          zIndex: 1
+                          zIndex: 3
                         }) 
                         rectY1 += rectWidth;
                         idx1 += 1 
@@ -247,7 +247,7 @@ function App() {
                       x: toggleState ? newPoint[0] : rectX, 
                       y: toggleState ? newPoint[1] : rectY
                     },
-                    zIndex: 1
+                    zIndex: 2
                   })
                   if(width > maxWidth) maxWidth = width // find the max width from the subset of nodes in the same column
                   rectY += d2.name === 'Group' ? height + (pad * 2) : height; //increase y-position of the next node in a column
@@ -282,6 +282,7 @@ function App() {
             //console.log('group node without parent', d1.id)
             const sameSourceConn = connectedNodes.find(d => d[1].indexOf(d1.id) !== -1)
             let connNodes = sameSourceConn ? nodes.filter(d => sameSourceConn[1].indexOf(d.id) !== -1) : []
+            // note: there seems to be duplicate nodes...
             connNodes = connNodes.filter((value, index, self) =>
               index === self.findIndex((t) => (
                 t.id === value.id
@@ -333,8 +334,8 @@ function App() {
               //   y: toggleState ? newPoint[1] : pad
               // }, 
               position: { 
-                x: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.x : newPoint[0]) : X,
-                y: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.y : newPoint[1]) : Y
+                x: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.x : newPoint1[0]) : X,
+                y: (toggleState && currentNodes) ? (refNode.position3D ? refNode.position3D.y : newPoint1[1]) : Y
               }, 
               position3D: {
                 x: newPoint[0],
@@ -342,7 +343,7 @@ function App() {
               },
               zIndex: 1
             })
-            if(connNodes.length === 0) {
+            if(connNodes.length === 0) { //check that group nodes do 
               rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
               rectXGlobal3D += (rectX * 1.5) + (pad * 2)
             }
@@ -350,9 +351,10 @@ function App() {
 
           } else {
             
-            // node with icon without group OR empty group
+            // node with icon without group OR empty group. this nodes may or may not be cononected to other nodes
             //(to note: actually seems unlikely to have empty groups, but this may be possible if the user manually contructs the graph)
-            //console.log('lone node or empty group', d1.id)
+            if(d1.parentNode) return //do this to ensure node is not within a group
+            //console.log('non-nested node or empty group', d1.id)
             const newPoint = translatePointOnRotatedPlane([rectXGlobal + rectWidth/2, rectWidth * singleNodeCounter, 0])
             nodes.push({
               ...d1,
@@ -387,7 +389,7 @@ function App() {
         })
       }
     })
-
+    // just a safety check that there are no duplicate nodes or edges
     nodes = nodes.filter((value, index, self) =>
       index === self.findIndex((t) => (
         t.id === value.id
@@ -455,6 +457,11 @@ function App() {
     []
   );
 
+  // const onElementsRemove = (elementsToRemove) => {
+  //   setNodes((els) => els.filter((e) => !elementsToRemove.includes(e)));
+  //   setEdges((els) => els.filter((e) => !elementsToRemove.includes(e)));
+  // };
+
   const onConnect = useCallback((params) => {
     setEdges((eds) => { 
       return addEdge({
@@ -518,7 +525,7 @@ function App() {
             nodeAddToGrp.position = {x: changes[0].position.x, y: changes[0].position.y} 
           }
           nodeAddToGrp.positionAbsolute = {x: g.position.x, y: g.position.y} // coordinates of group
-          nodeAddToGrp.zIndex = 1
+          nodeAddToGrp.zIndex = 3
           // (to note: comment out this part for simplicity sake. IDs of each node can reflect that it's part of a group, however since this does not actually affect graph layout algorithm and its complex when there are highly nested nodes as the child nodes have to be found recursively, I chose to remove it)
           // check if moved node is a group node
           // const checkIfGrp = nds.find(n => n.id === changes[0].id && isGroup(n)) || {}
@@ -600,6 +607,7 @@ function App() {
 
   const onNodesChange = useCallback(
     (changes) => {
+      if(toggleState) return
       console.log('on change')
       let rawDataCopy = {...rawData}
       setNodes((nds) => {
@@ -621,7 +629,7 @@ function App() {
       })
       setRawData(rawDataCopy)
     },
-    [rawData]
+    [rawData, toggleState]
   );
 
   return (
