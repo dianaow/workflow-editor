@@ -131,6 +131,81 @@ function App() {
 
     const connectedNodes = Object.entries(findConnectedNodes(data.nodes))
 
+    function createNodes(d1, rectX) {
+
+      const nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length));
+      const nrOfColumns = Math.sqrt(d1.nodes.length) % 1 > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length));
+      let idx = 0 //counter to select a node from array of nested nodes
+      let maxY = 0;
+ 
+      for (let colIdx = 0; colIdx < nrOfColumns; colIdx++) {
+        let maxWidth = 0;
+        let rectY = pad;
+        for (let rowIdx = 0; rowIdx < nrOfRows; rowIdx++) {
+          const d2 = d1.nodes[idx];
+ 
+          if (d2) {
+
+            let nrOfRows1 = 0;
+            let nrOfColumns1 = 0;
+            let width = rectWidth;
+            let height = rectWidth;
+
+            if (d2.nodes) {
+              let rectX1 = 0
+              nrOfRows1 = Math.ceil(Math.sqrt(d2.nodes.length));
+              nrOfColumns1 = Math.sqrt(d2.nodes.length) % 1 > 0.5 ? nrOfRows1 : Math.floor(Math.sqrt(d2.nodes.length));
+    
+              width = isGroup(d2) ? nrOfColumns1 * rectWidth : rectWidth;
+              height = isGroup(d2) ? nrOfRows1 * rectWidth : rectWidth;
+              //console.log('recursion',  nrOfColumns1,  nrOfRows1)
+              createNodes(
+                d2,
+                rectX1
+              );
+            }
+    
+            const newPoint = translatePointOnRotatedPlane([
+              isGroup(d2) ? rectX : rectX + width / 2 + pad,
+              rectY - pad,
+              0,
+            ]);
+    
+            nodes.push({
+              ...d2,
+              type: isGroup(d2) ? GROUP_NODE_TYPE : NODE_TYPE,
+              data: {
+                label: d2.id,
+                name: d2.name,
+                width,
+                height,
+              },
+              style:
+              isGroup(d2) && toggleState === false
+                  ? { background: "rgba(102, 157, 246, 0.14)", border: "1px dashed #4285F4" }
+                  : {},
+              parentNode: d1.id,
+              extent: "parent",
+              position: {
+                x: toggleState ? newPoint[0] : rectX,
+                y: toggleState ? newPoint[1] : rectY,
+              },
+              zIndex: 2,
+            });
+    
+            if (width > maxWidth) maxWidth = width;
+            rectY += height + (isGroup(d2) ? pad : 0);
+    
+            if (rectY > maxY) maxY = rectY;
+          }
+          idx++;
+        }
+        rectX += maxWidth;
+      }
+    
+      return {rectX, maxY}
+    }
+    
     data.nodes.map(d => {
       // add root node, if any. this will always be a group node 
       if(d.id){
@@ -167,8 +242,7 @@ function App() {
             })
           }
           
-          let rectX = pad; //initial padding for each row within parent group node (d1.id)
-          let idx = 0 //counter to select a node from array of nested nodes
+          let rectX = pad
           if(d1.nodes && d1.nodes.length > 0){ //continue adding more elements if there are nested elements (single/group) within parent
             //necessary to prevent duplicate nested nodes that arise from the custom onNodesChanges function
             d1.nodes = d1.nodes.filter((value, index, self) =>
@@ -176,87 +250,8 @@ function App() {
                 t.id === value.id
               ))
             )
-            //find the number of rows and columns to fit all nested nodes in a grid layout within parent
-            let nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length)) 
-            let nrOfColumns = (Math.sqrt(d1.nodes.length) % 1) > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length))
-            let maxY = 0
-            for (let colIdx = 0; colIdx < nrOfColumns; colIdx++) {
-              let maxWidth = 0
-              let rectY = pad; // start each new column in the same y position (20px of padding)
-              for (let rowIdx = 0; rowIdx < nrOfRows; rowIdx++) {
-                let d2 = d1.nodes[idx] //get data of a node
-                if(d2){
 
-                  let nrOfRows1 = d2.nodes ? Math.ceil(Math.sqrt(d2.nodes.length)) : 0
-                  let nrOfColumns1 = d2.nodes ? ((Math.sqrt(d2.nodes.length) % 1) > 0.5 ? nrOfRows1 : Math.floor(Math.sqrt(d2.nodes.length))) : 0
-                  // nested node can either be a group or single node
-                  let width = d2.name === 'Group' ? (nrOfColumns1 * rectWidth) : rectWidth 
-                  let height = d2.name === 'Group' ? (nrOfRows1 * rectWidth) : rectWidth
-
-                  let idx1 = 0
-                  let rectX1 = pad;
-                  if(d2.nodes){
-                    for (let colIdx1 = 0; colIdx1 < nrOfColumns1; colIdx1++) {
-                      let rectY1 = pad; // start each new column in the same y position (20px of padding)
-                      for (let rowIdx1 = 0; rowIdx1 < nrOfRows1; rowIdx1++) {
-                        let d3 = d2.nodes[idx1] //get data of a node
-                       if(d3){
-                        //console.log('nested node ' + d3.id + ' inside group ' + d2.id, rowIdx1)
-                        const newPoint = translatePointOnRotatedPlane([rectX1 +rectWidth/2 + pad, rectY1 - pad, 0])
-                        nodes.push({
-                          ...d3,
-                          type: d3.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
-                          data: { 
-                            label: d3.id, 
-                            name: d3.name,
-                            width: rectWidth,
-                            height: rectWidth
-                          },
-                          style: (d3.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
-                          parentNode: d2.id,
-                          extent: 'parent',
-                          position: { 
-                            x: toggleState ? newPoint[0] : rectX1, 
-                            y: toggleState ? newPoint[1] : rectY1
-                          },
-                          zIndex: 3
-                        }) 
-                        rectY1 += rectWidth;
-                        idx1 += 1 
-                       }
-                      }
-                      rectX1 += rectWidth;
-                    }
-                  }
-
-                  //console.log('nested node ' + d2.id + ' inside group ' + d1.id)
-                  const newPoint = translatePointOnRotatedPlane([d2.name === 'Group' ? rectX : rectX + width/2 + pad, rectY, 0])
-                  nodes.push({
-                    ...d2,
-                    type: d2.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
-                    data: { 
-                      label: d2.id, 
-                      name: d2.name,
-                      width,
-                      height
-                    },
-                    style: (d2.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
-                    parentNode: d1.id,
-                    extent: 'parent', //restrict movment of nested node to within parent
-                    position: { 
-                      x: toggleState ? newPoint[0] : rectX, 
-                      y: toggleState ? newPoint[1] : rectY
-                    },
-                    zIndex: 2
-                  })
-                  if(width > maxWidth) maxWidth = width // find the max width from the subset of nodes in the same column
-                  rectY += d2.name === 'Group' ? height + (pad * 2) : height; //increase y-position of the next node in a column
-                  if(rectY > maxY) maxY = rectY // find the max height from the subset of nodes in the same column
-                }
-                idx += 1 //move on to the next node in array to give placement to
-              }
-              rectX += maxWidth;  //increase x-position of the next node in a row
-            } 
+            let {rectX, maxY} = createNodes(d1, pad);
 
             //add edges if there are connections between nested nodes
             d1.nodes.map((d2) => {
@@ -447,8 +442,19 @@ function App() {
   }  
 
   const onEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes) => {
+      let rawDataCopy = {...rawData}
+      setEdges((eds) => {
+        if(changes[0].type === 'remove') {
+          const edgeToRemove = eds.find(d => d.id === changes[0].id)
+          eds = eds.filter(d => d.id !== changes[0].id)
+          removeConnectionById(rawDataCopy, edgeToRemove.source, edgeToRemove.target)
+        }
+        return applyEdgeChanges(changes, eds)
+      })
+      setRawData(rawDataCopy)
+    },
+    [rawData]
   );
 
   // gets called after end of edge gets dragged to another source or target
@@ -456,12 +462,8 @@ function App() {
     (oldEdge, newConnection) => setEdges((els) => updateEdge(oldEdge, newConnection, els)),
     []
   );
-
-  // const onElementsRemove = (elementsToRemove) => {
-  //   setNodes((els) => els.filter((e) => !elementsToRemove.includes(e)));
-  //   setEdges((els) => els.filter((e) => !elementsToRemove.includes(e)));
-  // };
-
+  
+  // get called when drawing a new edge between two nodes
   const onConnect = useCallback((params) => {
     setEdges((eds) => { 
       return addEdge({
@@ -541,22 +543,41 @@ function App() {
     return nodeAddToGrp
   }
 
-  function recursiveFindNode(input, nodeAddToGrp) {
-    for (var i = 0, l = input.length; i < l; i++) {
-        var current = input[i];
-        current.id === nodeAddToGrp.id
-        current = {...nodeAddToGrp}
-        if (current.nodes && current.nodes.length > 0) {
-          recursiveFindNode(current.nodes, nodeAddToGrp);
-        };
-    };
-    return input
-  };
+  function recursiveFindNode(obj, id, imputeObj) {
+    if (obj.id === id) {
+      // found the object to impute, so merge the imputeObj into the current object
+      Object.assign(obj, imputeObj);
+      return true;
+    } else if (Array.isArray(obj.nodes)) {
+      // recursively check each child node
+      for (const node of obj.nodes) {
+        if (recursiveFindNode(node, id, imputeObj)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  function removeConnectionById(obj, id, conn) {
+    if (obj.id === id) {
+      obj.connectTo = obj.connectTo.filter((c) => c !== conn);
+      return true;
+    }
+    if (obj.nodes) {
+      for (let i = 0; i < obj.nodes.length; i++) {
+        if (removeConnectionById(obj.nodes[i], id, conn)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   const onDrop = useCallback(
     (event) => {
       event.preventDefault();
-      console.log('on drop')
+
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow');
 
@@ -607,8 +628,8 @@ function App() {
 
   const onNodesChange = useCallback(
     (changes) => {
-      if(toggleState) return
-      console.log('on change')
+      if(toggleState) return // view-only mode in 3D
+
       let rawDataCopy = {...rawData}
       setNodes((nds) => {
         
@@ -617,14 +638,14 @@ function App() {
         if(Object.keys(nodeAddToGrp).length !== 0 && nodeAddToGrp.parentNode){
           nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...nds.filter(d => isGroup(d) && d.id !== changes[0].id)] // all nodes in a flat structure (single nodes not picked, the picked node (single/group), groups not picked)
           // lone nodes and group nodes that are not nested
-          rawDataCopy = recursiveFindNode({...rawDataCopy}, {...nodeAddToGrp})
+          recursiveFindNode(rawDataCopy, nodeAddToGrp.id, {...nodeAddToGrp})
           console.log('dynamic modification of flat array of all nodes', nds)
           console.log('modify JSON structure of nodes pre-render', rawDataCopy)
           return nds
         } 
 
         //rawDataCopy = {nodes: [{nodes: [...nds.filter(d => isNode(d) && !d.parentNode), ...nds.filter(d => isGroup(d) && !d.parentNode)]}]} // lone nodes and group nodes that are not nested (commented out because the original sequential order of nodes and groups have to be maintained)
-        rawDataCopy = recursiveFindNode({...rawDataCopy}, {...nodeAddToGrp})
+        recursiveFindNode(rawDataCopy, nodeAddToGrp.id, {...nodeAddToGrp})
         return applyNodeChanges(changes, nds)
       })
       setRawData(rawDataCopy)
@@ -692,4 +713,5 @@ function App() {
 }
 
 export default App
+
 
