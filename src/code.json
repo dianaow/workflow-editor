@@ -70,7 +70,8 @@
                  "category": "service",
                  "connectTo": [
                     "viz01-g01-g03",
-                    "viz01-g01-g05"
+                    "viz01-g01-g05",
+                    "viz01-g01-g13"
                  ],
                  "otherProperties": "...",
                  "nodes": []
@@ -90,7 +91,7 @@
                  "type": "group",
                  "category": "group",
                  "connectTo": [
-                    "viz01-g01-g04"
+                    "viz01-g01-g04", "viz01-g01-g07"
                  ],
                  "otherProperties": "...",
                  "nodes": [
@@ -120,7 +121,7 @@
                  "type": "group",
                  "category": "group",
                  "connectTo": [
-                    
+                  "viz01-g01-g06", "viz01-g01-g07"
                  ],
                  "otherProperties": "...",
                  "nodes": [
@@ -190,7 +191,82 @@
                        "connectTo": [],
                        "otherProperties": "...",
                        "nodes": null
-                    }
+                    },
+                    {
+                     "id": "viz01-g01-g05-g06",
+                     "name": null,
+                     "type": "group",
+                     "category": "group",
+                     "connectTo": [],
+                     "otherProperties": "...",
+                     "nodes": [
+                        {
+                           "id": "viz01-g01-g05-g01-u01",
+                           "name": "Data Store",
+                           "type": "node",
+                           "category": "service",
+                           "connectTo": [],
+                           "otherProperties": "...",
+                           "nodes": null
+                        },
+                        {
+                           "id": "viz01-g01-g05-g01-u02",
+                           "name": "App Engine",
+                           "type": "node",
+                           "category": "service",
+                           "connectTo": [],
+                           "otherProperties": "...",
+                           "nodes": null
+                        },
+                        {
+                           "id": "viz01-g01-g05-g01-g01",
+                           "name": null,
+                           "type": "group",
+                           "category": "group",
+                           "connectTo": [],
+                           "otherProperties": "...",
+                           "nodes": [
+                              {
+                                 "id": "viz01-g01-g05-g01-g01-u01",
+                                 "name": "Big Query",
+                                 "type": "node",
+                                 "category": "service",
+                                 "connectTo": [],
+                                 "otherProperties": "...",
+                                 "nodes": null                                   
+                              }
+                           ]
+                        },
+                        {
+                           "id": "viz01-g01-g05-g01-g02",
+                           "name": null,
+                           "type": "group",
+                           "category": "group",
+                           "connectTo": [],
+                           "otherProperties": "...",
+                           "nodes": [
+                              {
+                                 "id": "viz01-g01-g05-g01-g02-u01",
+                                 "name": "Logging",
+                                 "type": "node",
+                                 "category": "service",
+                                 "connectTo": [],
+                                 "otherProperties": "...",
+                                 "nodes": null                                   
+                              },
+                              {
+                                 "id": "viz01-g01-g05-g01-g02-u02",
+                                 "name": "Dataprop",
+                                 "type": "node",
+                                 "category": "service",
+                                 "connectTo": [],
+                                 "otherProperties": "...",
+                                 "nodes": null                                   
+                              }
+                           ]
+                        }                              
+                     ]
+                  }
                  ]
               },
               {
@@ -201,7 +277,228 @@
                  "connectTo": [],
                  "otherProperties": "...",
                  "nodes": []
-              }
+              },
+              {
+                  "id": "viz01-g01-g06",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     "viz01-g01-g08"
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g06-u01",
+                        "name": "Monitoring",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     },
+                     {
+                        "id": "viz01-g01-g06-g01",
+                        "name": null,
+                        "type": "group",
+                        "category": "group",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": [
+                           {
+                              "id": "viz01-g01-g06-g01-u01",
+                              "name": "Big Query",
+                              "type": "node",
+                              "category": "service",
+                              "connectTo": [],
+                              "otherProperties": "...",
+                              "nodes": null                                   
+                           }
+                        ]
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g07",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     "viz01-g01-g09", "viz01-g01-g10"
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g07-u01",
+                        "name": "Logging",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g08",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g08-u01",
+                        "name": "Data Flow",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g09",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     "viz01-g01-g11"
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g09-u01",
+                        "name": "Cloud Storage",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g10",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     "viz01-g01-g11"
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g10-u01",
+                        "name": "App Engine",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     },
+                     {
+                        "id": "viz01-g01-g10-u02",
+                        "name": "Data Store",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     },
+                     {
+                        "id": "viz01-g01-g10-u03",
+                        "name": "Data Store",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g11",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                     "viz01-g01-g12"
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g11-u01",
+                        "name": "Compute Engine",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-g12",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g12-u01",
+                        "name": "Pub/Sub",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               },
+               {
+                  "id": "viz01-g01-u05",
+                  "name": "Data Prop",
+                  "type": "node",
+                  "category": "service",
+                  "connectTo": [],
+                  "otherProperties": "...",
+                  "nodes": null
+               },
+               {
+                  "id": "viz01-g01-u06",
+                  "name": "Data Lab",
+                  "type": "node",
+                  "category": "service",
+                  "connectTo": [],
+                  "otherProperties": "...",
+                  "nodes": null
+               },
+               {
+                  "id": "viz01-g01-g13",
+                  "name": null,
+                  "type": "group",
+                  "category": "group",
+                  "connectTo": [
+                  ],
+                  "otherProperties": "...",
+                  "nodes": [
+                     {
+                        "id": "viz01-g01-g13-u01",
+                        "name": "Pub/Sub",
+                        "type": "node",
+                        "category": "service",
+                        "connectTo": [],
+                        "otherProperties": "...",
+                        "nodes": null
+                     }
+                  ]
+               }
            ]
         }
      ]

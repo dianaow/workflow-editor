@@ -103,6 +103,18 @@ function translatePointOnRotatedPlane(point) {
   return transformedPoint
 }
 
+const countNodes = (arr) => {
+  let count = arr.length;
+
+  arr.forEach((item) => {
+    if (item.nodes) {
+      count += countNodes(item.nodes);
+    }
+  });
+
+  return count;
+};
+
 function App() {
   const reactFlowWrapper = useRef(null);
   const [rawData, setRawData] = useState({});
@@ -126,7 +138,7 @@ function App() {
     let counter = 0
     let rectWidth = toggleState ? (box + pad) * 1.5 : (box + pad) //node width (64px) including padding (to give sufficient gap between nodes)
     let rectXGlobal = pad //initial padding for the first node placement 
-    let singleNodeCounter = 1 //this is used to count the number of singles nodes within the root node
+    let singleNodeCounter = 0 //this is used to count the number of singles nodes within the root node
     let rectXGlobal3D = pad
 
     const connectedNodes = Object.entries(findConnectedNodes(data.nodes))
@@ -153,16 +165,18 @@ function App() {
 
             if (d2.nodes) {
               let rectX1 = 0
-              nrOfRows1 = Math.ceil(Math.sqrt(d2.nodes.length));
-              nrOfColumns1 = Math.sqrt(d2.nodes.length) % 1 > 0.5 ? nrOfRows1 : Math.floor(Math.sqrt(d2.nodes.length));
-    
-              width = isGroup(d2) ? nrOfColumns1 * rectWidth : rectWidth;
-              height = isGroup(d2) ? nrOfRows1 * rectWidth : rectWidth;
-              //console.log('recursion',  nrOfColumns1,  nrOfRows1)
-              createNodes(
+              const nodeCount = d2.nodes.length
+              nrOfRows1 = Math.ceil(Math.sqrt(nodeCount));
+              nrOfColumns1 = Math.sqrt(nodeCount) % 1 > 0.5 ? nrOfRows1 : Math.floor(Math.sqrt(nodeCount));
+              
+              let {rectX, maxY} = createNodes(
                 d2,
                 rectX1
               );
+ 
+              width = isGroup(d2) ? nrOfColumns1 * rectWidth : rectWidth;
+              height = isGroup(d2) ? maxY : rectWidth;
+
             }
     
             const newPoint = translatePointOnRotatedPlane([
@@ -243,6 +257,8 @@ function App() {
           }
           
           let rectX = pad
+          const refNode = currentNodes ? currentNodes.find(d => d.id === d1.id) : []
+
           if(d1.nodes && d1.nodes.length > 0){ //continue adding more elements if there are nested elements (single/group) within parent
             //necessary to prevent duplicate nested nodes that arise from the custom onNodesChanges function
             d1.nodes = d1.nodes.filter((value, index, self) =>
@@ -275,7 +291,7 @@ function App() {
 
             // the group node has to contain all nested single and group nodes of various sizes
             //console.log('group node without parent', d1.id)
-            const sameSourceConn = connectedNodes.find(d => d[1].indexOf(d1.id) !== -1)
+            const sameSourceConn = connectedNodes.filter(d => d[1].indexOf(d1.id) !== -1).slice(-1)[0]
             let connNodes = sameSourceConn ? nodes.filter(d => sameSourceConn[1].indexOf(d.id) !== -1) : []
             // note: there seems to be duplicate nodes...
             connNodes = connNodes.filter((value, index, self) =>
@@ -283,33 +299,36 @@ function App() {
                 t.id === value.id
               ))
             )
+            const srcNode = (sameSourceConn) ? nodes.find(d => d.id === edges.find(d => d.target === d1.id).source) : null
+
             let X = []
             let Y = []
             let X_3d = []
             let Y_3d = []
+                        
             if(connNodes.length > 0){
-              const refNode = connNodes.slice(-1)[0]
-              const totalY = connNodes.filter(d => d.id !== d1.id).map(d => d.data.height + pad).reduce((a, b) => a + b, 0) + pad
-              if(d1.id !== refNode.id) {
-                X = refNode.position.x
+              const sibNode = connNodes.slice(-1)[0]
+              //const totalY = connNodes.filter(d => d.id !== d1.id).map(d => d.position.y + d.data.height).reduce((a, b) => a + b, 0) + pad
+              const totalY = sibNode.position.y + sibNode.data.height + pad
+              if(d1.id !== sibNode.id) {
+                X = sibNode.position.x
                 Y = totalY
-                X_3d = refNode.position.x + rectWidth * 1.5
+                X_3d = sibNode.position.x + rectWidth * 1.5
                 Y_3d = totalY * 1.5
               } else {
-                X = refNode.position.x
-                Y = refNode.position.y
-                X_3d = refNode.position.x + rectWidth * 1.5
-                Y_3d = refNode.position.y
+                X = sibNode.position.x
+                Y = sibNode.position.y
+                X_3d = sibNode.position.x
+                Y_3d = sibNode.position.y
               }
             } else {
               X = rectXGlobal
-              Y = pad
+              Y = srcNode ? srcNode.position.y : pad
               X_3d = rectXGlobal3D
-              Y_3d = pad
+              Y_3d = srcNode ? srcNode.position.y : pad
             }
             const newPoint1 = translatePointOnRotatedPlane([X, Y, 0])
             const newPoint = translatePointOnRotatedPlane([X_3d, Y_3d, 0])
-            const refNode = currentNodes ? currentNodes.find(d => d.id === d1.id) : []
             //const newPoint = translatePointOnRotatedPlane([rectXGlobal, pad, 0])
 
             nodes.push({
@@ -341,6 +360,8 @@ function App() {
             if(connNodes.length === 0) { //check that group nodes do 
               rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
               rectXGlobal3D += (rectX * 1.5) + (pad * 2)
+            } else {
+              rectXGlobal += Math.max(...connNodes.map(d => d.data.width)) - rectWidth  + pad
             }
             counter += 1 
 
@@ -350,23 +371,31 @@ function App() {
             //(to note: actually seems unlikely to have empty groups, but this may be possible if the user manually contructs the graph)
             if(d1.parentNode) return //do this to ensure node is not within a group
             //console.log('non-nested node or empty group', d1.id)
-            const newPoint = translatePointOnRotatedPlane([rectXGlobal + rectWidth/2, rectWidth * singleNodeCounter, 0])
+            const edge = edges.find(d => d.target === d1.id)
+            const srcNode = edge ? nodes.find(d => d.id === edge.source) : null
+            const Y = (srcNode ? (srcNode.position.y + srcNode.data.height/2 - rectWidth/2 + (rectWidth * edges.filter(d => d.source === edge.source && d.target.includes("u")).map(d => d.target).indexOf(d1.id))) : (rectWidth * singleNodeCounter))
+            const newPoint = translatePointOnRotatedPlane([rectXGlobal3D + (rectX*1.5) + (pad*2), Y, 0])
+            
             nodes.push({
               ...d1,
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
                 name: d1.name,
-                width:  d1.name === 'Group' ? 100 : 64,
-                height: d1.name === 'Group' ? 100 : 64,
+                width: rectWidth,
+                height: rectWidth,
                 type: 'single',
               },
               parentNode: d.id,
               extent: !d.id ? null : 'parent',
               style: (d1.name === 'Group' && toggleState === false) ? {background: 'rgba(102, 157, 246, 0.14)', border: '1px dashed #4285F4' } : {},
               position: { 
-                x: toggleState ? newPoint[0] : rectXGlobal, 
-                y: toggleState ? newPoint[1] : (rectWidth * singleNodeCounter)
+                x: toggleState ? (refNode.position3D ? refNode.position3D.x : newPoint[0]) : rectXGlobal, 
+                y: toggleState ? (refNode.position3D ? refNode.position3D.y : newPoint[1]) : Y
+              },
+              position3D: {
+                x: newPoint[0],
+                y: newPoint[1]
               },
               zIndex: 1
             })
@@ -378,7 +407,7 @@ function App() {
               rectXGlobal += rectX + (pad*2)
               rectXGlobal3D += rectX + (pad*2) 
             }
-            singleNodeCounter += 1
+            if(!edge) singleNodeCounter += 1
           }
 
         })
