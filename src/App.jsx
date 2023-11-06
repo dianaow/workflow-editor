@@ -15,6 +15,111 @@ import { ReactComponent as Download } from "./assets/misc/download.svg"
 import { ReactComponent as Upload } from "./assets/misc/upload.svg"
 import * as math from 'mathjs'
 
+// function generateJSON(numChildren) {
+//   let nodes = []
+//   for (let i = 0; i < numChildren; i++) {
+//     let node = generateNodes(i)
+//     nodes.push(node)
+//   }
+
+//   let maxNextConnections = 22
+//   const numNextConnection = Math.floor(Math.random() * maxNextConnections)
+//   for (let j = 0; j < numNextConnection; j++) {
+//     const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const regex = /g(\d+)/;
+//     const match = sourceNode.id.match(regex);
+//     const num = match ? parseInt(match[1]) + Math.floor(Math.random() * 2) : null;
+//     if(num && num < numChildren){
+//       const targetID = 'viz01-g' + num
+//       if (targetID !== sourceNode.id && !sourceNode.connectTo.includes(targetID)) {
+//         sourceNode.connectTo.push(targetID);
+//       }
+//     }
+//   }
+  
+//   let maxConnections = 32
+//   const numConnections = Math.floor(Math.random() * maxConnections);
+//   for (let j = 0; j < numConnections; j++) {
+//     const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const regex = /g(\d+)/;
+//     const sourceID = parseInt(sourceNode.id.match(regex)[1])
+//     const targetID = parseInt(randomNode.id.match(regex)[1])
+//     if (randomNode.id !== sourceNode.id && !sourceNode.connectTo.includes(randomNode) && targetID > sourceID) {
+//       sourceNode.connectTo.push(randomNode.id);
+//     }
+//   }
+  
+//   const json = {
+//     "id": "viz01",
+//     "name": "GCP Architecture",
+//     "nodes": [
+//       {"nodes": nodes}
+//     ]
+//   }
+
+//   return json
+// }
+
+// function generateNodes(counter) {
+//   const rootNode = {
+//     id: "viz01-g" + counter,
+//     name: null,
+//     type: "group",
+//     category: "group",
+//     connectTo: [],
+//     otherProperties: "...",
+//     nodes: []
+//   };
+
+//   const stack = [rootNode];
+
+//   const names = ['Pub/Sub', 'App Engine', 'Big Query', 'Cloud Storage', 'Compute Engine', 'Data Flow', 'Data Lab', 'Data Prop', 'Data Store', 'Logging',  'Monitoring']
+
+//   while (stack.length > 0) {
+//     let nodeCounter = 0
+//     let groupCounter = 0
+//     const currNode = stack.pop();
+//     const numChildren = Math.floor(Math.random() * 4) + 1;
+//     if (numChildren > 1) {
+//       for (let i = 0; i < numChildren; i++) {
+//         let type = Math.random() < 0.75 ? "node" : "group"
+//         const childNode = {
+//           id: `${currNode.id}-${(type ===  "node" ? "u" + nodeCounter : "g" + groupCounter)}`,
+//           name: type === "node" ? names[Math.floor(Math.random() * names.length)] : null,
+//           type,
+//           category: type === "node" ? "service" : "group",
+//           connectTo: [],
+//           nodes: []
+//         };
+//         currNode.nodes.push(childNode);
+//         if (childNode.type === "group") {
+//           stack.push(childNode);
+//         }
+//         if(type === 'node'){
+//           nodeCounter += 1
+//         } else {
+//           groupCounter += 1
+//         }
+//       }
+//     } else {
+//       const childNode = {
+//         id: `${currNode.id}-${("u" + nodeCounter)}`,
+//         name: null,
+//         type: "node",
+//         category: "service",
+//         connectTo: [],
+//         otherProperties: "...",
+//         nodes: []
+//       };
+//       currNode.nodes.push(childNode);
+//       nodeCounter += 1
+//     }
+//   }
+
+//   return rootNode;
+// }
+
 const nodeTypes = {
   default2DNode: Custom2DNode,
   group2DNode: Group2DNode,
@@ -103,21 +208,53 @@ function translatePointOnRotatedPlane(point) {
   return transformedPoint
 }
 
-const countNodes = (arr) => {
-  let count = arr.length;
 
-  arr.forEach((item) => {
-    if (item.nodes) {
-      count += countNodes(item.nodes);
+function countColumns(tree) {
+  let count = 0;
+  let stack = [tree];
+
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if(!node.nodes) continue
+    let nodeCount = node.nodes.filter(d => d.type === 'node').length
+    let nrOfRows = Math.ceil(Math.sqrt(nodeCount));
+    let nrOfColumns = Math.sqrt(nodeCount) % 1 > 0.5 ? nrOfRows : Math.floor(Math.sqrt(nodeCount));
+    count +=  nrOfColumns
+    if (node.nodes) {
+      stack = stack.concat(node.nodes);
     }
-  });
+  }
 
   return count;
-};
+}
+
+function hasConnectionBefore(nodeId, data, sibNodes) {
+  let found = false;
+  let result = false;
+  const search = (node, targetId) => {
+    if (node.id === targetId) {
+      found = true;
+      return;
+    }
+    if (node.nodes) {
+      node.nodes.forEach(n => search(n, targetId));
+    }
+    if (found && node.nodes) {
+      const previousNode = node.nodes[node.nodes.findIndex(n => n.id === targetId) - 1];
+      if (previousNode && previousNode.connectTo.length > 0 && !previousNode.connectTo.includes(nodeId) && !previousNode.connectTo.includes(sibNodes)) {
+        result = true;
+      }
+    }
+  };
+  data.nodes.forEach(node => search(node, nodeId));
+  return result;
+}
 
 function App() {
   const reactFlowWrapper = useRef(null);
-  const [rawData, setRawData] = useState({});
+  //const [rawData, setRawData] = useState(generateJSON(12));
+  const [rawData, setRawData] = useState([]);
+
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [toggleState, setToggleState] = useState(false);
@@ -126,7 +263,6 @@ function App() {
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const updateData = (data, toggleState, currentNodes) => {
-
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
@@ -134,7 +270,7 @@ function App() {
     let nodes = []
     let edges = []
     let box = 64
-    let pad = 30
+    let pad = 30       
     let counter = 0
     let rectWidth = toggleState ? (box + pad) * 1.5 : (box + pad) //node width (64px) including padding (to give sufficient gap between nodes)
     let rectXGlobal = pad //initial padding for the first node placement 
@@ -145,8 +281,10 @@ function App() {
 
     function createNodes(d1, rectX) {
 
-      const nrOfRows = Math.ceil(Math.sqrt(d1.nodes.length));
-      const nrOfColumns = Math.sqrt(d1.nodes.length) % 1 > 0.5 ? nrOfRows : Math.floor(Math.sqrt(d1.nodes.length));
+      const nodeCount1 = d1.nodes.length
+      const nrOfRows = Math.ceil(Math.sqrt(nodeCount1));
+      const nrOfColumns = Math.sqrt(nodeCount1) % 1 > 0.5 ? nrOfRows : Math.floor(Math.sqrt(nodeCount1));
+
       let idx = 0 //counter to select a node from array of nested nodes
       let maxY = 0;
  
@@ -157,18 +295,12 @@ function App() {
           const d2 = d1.nodes[idx];
  
           if (d2) {
-
-            let nrOfRows1 = 0;
-            let nrOfColumns1 = 0;
+            let nrOfColumns1 = countColumns(d2);
             let width = rectWidth;
             let height = rectWidth;
 
             if (d2.nodes) {
               let rectX1 = 0
-              const nodeCount = d2.nodes.length
-              nrOfRows1 = Math.ceil(Math.sqrt(nodeCount));
-              nrOfColumns1 = Math.sqrt(nodeCount) % 1 > 0.5 ? nrOfRows1 : Math.floor(Math.sqrt(nodeCount));
-              
               let {rectX, maxY} = createNodes(
                 d2,
                 rectX1
@@ -190,7 +322,7 @@ function App() {
               type: isGroup(d2) ? GROUP_NODE_TYPE : NODE_TYPE,
               data: {
                 label: d2.id,
-                name: d2.name,
+                name: d2.data.name,
                 width,
                 height,
               },
@@ -299,16 +431,18 @@ function App() {
                 t.id === value.id
               ))
             )
-            const srcNode = (sameSourceConn) ? nodes.find(d => d.id === edges.find(d => d.target === d1.id).source) : null
+    
+            const targetNode = edges.find(d => d.target === d1.id)
+            const srcNode = (sameSourceConn && targetNode) ? nodes.find(d => d.id === targetNode.source) : null
 
             let X = []
             let Y = []
             let X_3d = []
             let Y_3d = []
-                        
+
             if(connNodes.length > 0){
-              const sibNode = connNodes.slice(-1)[0]
-              //const totalY = connNodes.filter(d => d.id !== d1.id).map(d => d.position.y + d.data.height).reduce((a, b) => a + b, 0) + pad
+              const sibNode = connNodes.slice(-1)[0] // sibling before (all siblings share the same source node)
+              //const totalY = connNodes.filter(d => d.id !== d1.id).map(d => d.data.height).reduce((a, b) => a + b, 0) + pad
               const totalY = sibNode.position.y + sibNode.data.height + pad
               if(d1.id !== sibNode.id) {
                 X = sibNode.position.x
@@ -321,9 +455,14 @@ function App() {
                 X_3d = sibNode.position.x
                 Y_3d = sibNode.position.y
               }
+              const hasConnection = hasConnectionBefore(d1.id, data,sibNode.id); //check if previous node has a connection to another node further down, that is not a reference node (sibNode). if yes, shift current node up by its height
+              if(hasConnection) {
+                //console.log('previous node has other connections', d1.id)
+                //Y = Y - maxY
+              } 
             } else {
               X = rectXGlobal
-              Y = srcNode ? srcNode.position.y : pad
+              Y = srcNode ? srcNode.position.y : pad  // adjust y position based on source node
               X_3d = rectXGlobal3D
               Y_3d = srcNode ? srcNode.position.y : pad
             }
@@ -331,12 +470,21 @@ function App() {
             const newPoint = translatePointOnRotatedPlane([X_3d, Y_3d, 0])
             //const newPoint = translatePointOnRotatedPlane([rectXGlobal, pad, 0])
 
+            const connections = edges.filter(d => d.source === d1.id || d.target === d1.id) // check if node has any connections
+            const targetOnly = edges.filter(d => d.target === d1.id || d.source !== d1.id) // check if node is only a target node
+            if(connections.length === 0) {
+              //console.log('no connections', d1.id)
+              //Y = Y - maxY
+            } else if(targetOnly.length > 0){
+              //Y = Y + maxY
+            } 
+
             nodes.push({
               ...d1,
               type: GROUP_NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.name, 
+                name: d1.data.name, 
                 width: rectX, 
                 height: maxY
               },
@@ -358,8 +506,8 @@ function App() {
               zIndex: 1
             })
             if(connNodes.length === 0) { //check that group nodes do 
-              rectXGlobal += rectX + (pad * 2) // increase x-position of the next group within root node (based on group node width + padding between groups)
-              rectXGlobal3D += (rectX * 1.5) + (pad * 2)
+              rectXGlobal += rectX + rectWidth + (pad ) // increase x-position of the next group within root node (based on group node width + padding between groups)
+              rectXGlobal3D += (rectX * 1.5) + (pad)
             } else {
               rectXGlobal += Math.max(...connNodes.map(d => d.data.width)) - rectWidth  + pad
             }
@@ -375,13 +523,13 @@ function App() {
             const srcNode = edge ? nodes.find(d => d.id === edge.source) : null
             const Y = (srcNode ? (srcNode.position.y + srcNode.data.height/2 - rectWidth/2 + (rectWidth * edges.filter(d => d.source === edge.source && d.target.includes("u")).map(d => d.target).indexOf(d1.id))) : (rectWidth * singleNodeCounter))
             const newPoint = translatePointOnRotatedPlane([rectXGlobal3D + (rectX*1.5) + (pad*2), Y, 0])
-            
+
             nodes.push({
               ...d1,
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.name,
+                name: d1.data.name,
                 width: rectWidth,
                 height: rectWidth,
                 type: 'single',
@@ -426,8 +574,8 @@ function App() {
     )
 
     if(data.nodes[0].id){
-      const maxX = Math.max(...nodes.slice(1).map(d => Math.abs(d.position.x) + d.data.width))
-      const maxY = Math.max(...nodes.slice(1).map(d => Math.abs(d.position.y) + d.data.height))
+      const maxX = Math.max(...nodes.filter(d => d.data.name !== 'Root').map(d => Math.abs(d.position.x) + d.data.width))
+      const maxY = Math.max(...nodes.filter(d => d.data.name !== 'Root').slice(1).map(d => Math.abs(d.position.y) + d.data.height))
       const newPoint = translatePointOnRotatedPlane([0, 0, 0])
       nodes[0].position = {x: newPoint[0], y: newPoint[1]}
       nodes[0].data = { ...nodes[0].data, width: maxX + rectWidth + pad + nodes.slice(-1)[0].data.width, height: maxY  + pad}
@@ -441,8 +589,9 @@ function App() {
     const selectedNodes = nodes.filter(d => d.id !== selectedGraph.node.id)
     setNodes([...selectedNodes, updates.node]);
     //setEdges([...edges, updates.edges])
-    const otherData = rawData.filter(d => d.id !== updates.node.id)
-    setRawData({...otherData, ...updates.node})
+    const index = rawData.nodes[0].nodes.findIndex(d => d.id === updates.node.id)
+    rawData.nodes[0].nodes[index] = updates.node
+    setRawData({...rawData})
   }
 
   useEffect(() => {
@@ -494,6 +643,7 @@ function App() {
   
   // get called when drawing a new edge between two nodes
   const onConnect = useCallback((params) => {
+    console.log(params, edgeType)
     setEdges((eds) => { 
       return addEdge({
         ...params, 
@@ -668,8 +818,8 @@ function App() {
           nds = [...nds.filter(d => isNode(d) && d.id !== nodeAddToGrp.id), nodeAddToGrp, ...nds.filter(d => isGroup(d) && d.id !== changes[0].id)] // all nodes in a flat structure (single nodes not picked, the picked node (single/group), groups not picked)
           // lone nodes and group nodes that are not nested
           recursiveFindNode(rawDataCopy, nodeAddToGrp.id, {...nodeAddToGrp})
-          console.log('dynamic modification of flat array of all nodes', nds)
-          console.log('modify JSON structure of nodes pre-render', rawDataCopy)
+          //console.log('dynamic modification of flat array of all nodes', nds)
+          //console.log('modify JSON structure of nodes pre-render', rawDataCopy)
           return nds
         } 
 
