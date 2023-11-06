@@ -15,110 +15,110 @@ import { ReactComponent as Download } from "./assets/misc/download.svg"
 import { ReactComponent as Upload } from "./assets/misc/upload.svg"
 import * as math from 'mathjs'
 
-function generateJSON(numChildren) {
-  let nodes = []
-  for (let i = 0; i < numChildren; i++) {
-    let node = generateNodes(i)
-    nodes.push(node)
-  }
+// function generateJSON(numChildren) {
+//   let nodes = []
+//   for (let i = 0; i < numChildren; i++) {
+//     let node = generateNodes(i)
+//     nodes.push(node)
+//   }
 
-  let maxNextConnections = 22
-  const numNextConnection = Math.floor(Math.random() * maxNextConnections)
-  for (let j = 0; j < numNextConnection; j++) {
-    const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
-    const regex = /g(\d+)/;
-    const match = sourceNode.id.match(regex);
-    const num = match ? parseInt(match[1]) + Math.floor(Math.random() * 2) : null;
-    if(num && num < numChildren){
-      const targetID = 'viz01-g' + num
-      if (targetID !== sourceNode.id && !sourceNode.connectTo.includes(targetID)) {
-        sourceNode.connectTo.push(targetID);
-      }
-    }
-  }
+//   let maxNextConnections = 22
+//   const numNextConnection = Math.floor(Math.random() * maxNextConnections)
+//   for (let j = 0; j < numNextConnection; j++) {
+//     const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const regex = /g(\d+)/;
+//     const match = sourceNode.id.match(regex);
+//     const num = match ? parseInt(match[1]) + Math.floor(Math.random() * 2) : null;
+//     if(num && num < numChildren){
+//       const targetID = 'viz01-g' + num
+//       if (targetID !== sourceNode.id && !sourceNode.connectTo.includes(targetID)) {
+//         sourceNode.connectTo.push(targetID);
+//       }
+//     }
+//   }
   
-  let maxConnections = 32
-  const numConnections = Math.floor(Math.random() * maxConnections);
-  for (let j = 0; j < numConnections; j++) {
-    const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
-    const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
-    const regex = /g(\d+)/;
-    const sourceID = parseInt(sourceNode.id.match(regex)[1])
-    const targetID = parseInt(randomNode.id.match(regex)[1])
-    if (randomNode.id !== sourceNode.id && !sourceNode.connectTo.includes(randomNode) && targetID > sourceID) {
-      sourceNode.connectTo.push(randomNode.id);
-    }
-  }
+//   let maxConnections = 32
+//   const numConnections = Math.floor(Math.random() * maxConnections);
+//   for (let j = 0; j < numConnections; j++) {
+//     const sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+//     const regex = /g(\d+)/;
+//     const sourceID = parseInt(sourceNode.id.match(regex)[1])
+//     const targetID = parseInt(randomNode.id.match(regex)[1])
+//     if (randomNode.id !== sourceNode.id && !sourceNode.connectTo.includes(randomNode) && targetID > sourceID) {
+//       sourceNode.connectTo.push(randomNode.id);
+//     }
+//   }
   
-  const json = {
-    "id": "viz01",
-    "name": "GCP Architecture",
-    "nodes": [
-      {"nodes": nodes}
-    ]
-  }
+//   const json = {
+//     "id": "viz01",
+//     "name": "GCP Architecture",
+//     "nodes": [
+//       {"nodes": nodes}
+//     ]
+//   }
 
-  return json
-}
+//   return json
+// }
 
-function generateNodes(counter) {
-  const rootNode = {
-    id: "viz01-g" + counter,
-    name: null,
-    type: "group",
-    category: "group",
-    connectTo: [],
-    otherProperties: "...",
-    nodes: []
-  };
+// function generateNodes(counter) {
+//   const rootNode = {
+//     id: "viz01-g" + counter,
+//     name: null,
+//     type: "group",
+//     category: "group",
+//     connectTo: [],
+//     otherProperties: "...",
+//     nodes: []
+//   };
 
-  const stack = [rootNode];
+//   const stack = [rootNode];
 
-  const names = ['Pub/Sub', 'App Engine', 'Big Query', 'Cloud Storage', 'Compute Engine', 'Data Flow', 'Data Lab', 'Data Prop', 'Data Store', 'Logging',  'Monitoring']
+//   const names = ['Pub/Sub', 'App Engine', 'Big Query', 'Cloud Storage', 'Compute Engine', 'Data Flow', 'Data Lab', 'Data Prop', 'Data Store', 'Logging',  'Monitoring']
 
-  while (stack.length > 0) {
-    let nodeCounter = 0
-    let groupCounter = 0
-    const currNode = stack.pop();
-    const numChildren = Math.floor(Math.random() * 4) + 1;
-    if (numChildren > 1) {
-      for (let i = 0; i < numChildren; i++) {
-        let type = Math.random() < 0.75 ? "node" : "group"
-        const childNode = {
-          id: `${currNode.id}-${(type ===  "node" ? "u" + nodeCounter : "g" + groupCounter)}`,
-          name: type === "node" ? names[Math.floor(Math.random() * names.length)] : null,
-          type,
-          category: type === "node" ? "service" : "group",
-          connectTo: [],
-          nodes: []
-        };
-        currNode.nodes.push(childNode);
-        if (childNode.type === "group") {
-          stack.push(childNode);
-        }
-        if(type === 'node'){
-          nodeCounter += 1
-        } else {
-          groupCounter += 1
-        }
-      }
-    } else {
-      const childNode = {
-        id: `${currNode.id}-${("u" + nodeCounter)}`,
-        name: null,
-        type: "node",
-        category: "service",
-        connectTo: [],
-        otherProperties: "...",
-        nodes: []
-      };
-      currNode.nodes.push(childNode);
-      nodeCounter += 1
-    }
-  }
+//   while (stack.length > 0) {
+//     let nodeCounter = 0
+//     let groupCounter = 0
+//     const currNode = stack.pop();
+//     const numChildren = Math.floor(Math.random() * 4) + 1;
+//     if (numChildren > 1) {
+//       for (let i = 0; i < numChildren; i++) {
+//         let type = Math.random() < 0.75 ? "node" : "group"
+//         const childNode = {
+//           id: `${currNode.id}-${(type ===  "node" ? "u" + nodeCounter : "g" + groupCounter)}`,
+//           name: type === "node" ? names[Math.floor(Math.random() * names.length)] : null,
+//           type,
+//           category: type === "node" ? "service" : "group",
+//           connectTo: [],
+//           nodes: []
+//         };
+//         currNode.nodes.push(childNode);
+//         if (childNode.type === "group") {
+//           stack.push(childNode);
+//         }
+//         if(type === 'node'){
+//           nodeCounter += 1
+//         } else {
+//           groupCounter += 1
+//         }
+//       }
+//     } else {
+//       const childNode = {
+//         id: `${currNode.id}-${("u" + nodeCounter)}`,
+//         name: null,
+//         type: "node",
+//         category: "service",
+//         connectTo: [],
+//         otherProperties: "...",
+//         nodes: []
+//       };
+//       currNode.nodes.push(childNode);
+//       nodeCounter += 1
+//     }
+//   }
 
-  return rootNode;
-}
+//   return rootNode;
+// }
 
 const nodeTypes = {
   default2DNode: Custom2DNode,
@@ -252,7 +252,9 @@ function hasConnectionBefore(nodeId, data, sibNodes) {
 
 function App() {
   const reactFlowWrapper = useRef(null);
-  const [rawData, setRawData] = useState(generateJSON(12));
+  //const [rawData, setRawData] = useState(generateJSON(12));
+  const [rawData, setRawData] = useState([]);
+
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [toggleState, setToggleState] = useState(false);
@@ -261,7 +263,6 @@ function App() {
   const [selectedGraph, setSelectedGraph] = useState({node: {}, edges: {}});
 
   const updateData = (data, toggleState, currentNodes) => {
-    console.log(data)
     const NODE_TYPE = toggleState ? 'default3DNode' : 'default2DNode'
     const GROUP_NODE_TYPE = toggleState ? 'group3DNode' : 'group2DNode'
     const EDGE_TYPE = toggleState ? 'edge3D' : 'step'
@@ -269,7 +270,7 @@ function App() {
     let nodes = []
     let edges = []
     let box = 64
-    let pad = 30
+    let pad = 30       
     let counter = 0
     let rectWidth = toggleState ? (box + pad) * 1.5 : (box + pad) //node width (64px) including padding (to give sufficient gap between nodes)
     let rectXGlobal = pad //initial padding for the first node placement 
@@ -321,7 +322,7 @@ function App() {
               type: isGroup(d2) ? GROUP_NODE_TYPE : NODE_TYPE,
               data: {
                 label: d2.id,
-                name: d2.name,
+                name: d2.data.name,
                 width,
                 height,
               },
@@ -456,7 +457,7 @@ function App() {
               }
               const hasConnection = hasConnectionBefore(d1.id, data,sibNode.id); //check if previous node has a connection to another node further down, that is not a reference node (sibNode). if yes, shift current node up by its height
               if(hasConnection) {
-                console.log('previous node has other connections', d1.id)
+                //console.log('previous node has other connections', d1.id)
                 //Y = Y - maxY
               } 
             } else {
@@ -472,7 +473,7 @@ function App() {
             const connections = edges.filter(d => d.source === d1.id || d.target === d1.id) // check if node has any connections
             const targetOnly = edges.filter(d => d.target === d1.id || d.source !== d1.id) // check if node is only a target node
             if(connections.length === 0) {
-              console.log('no connections', d1.id)
+              //console.log('no connections', d1.id)
               //Y = Y - maxY
             } else if(targetOnly.length > 0){
               //Y = Y + maxY
@@ -483,7 +484,7 @@ function App() {
               type: GROUP_NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.name, 
+                name: d1.data.name, 
                 width: rectX, 
                 height: maxY
               },
@@ -528,7 +529,7 @@ function App() {
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.name,
+                name: d1.data.name,
                 width: rectWidth,
                 height: rectWidth,
                 type: 'single',
@@ -588,8 +589,9 @@ function App() {
     const selectedNodes = nodes.filter(d => d.id !== selectedGraph.node.id)
     setNodes([...selectedNodes, updates.node]);
     //setEdges([...edges, updates.edges])
-    const otherData = rawData.filter(d => d.id !== updates.node.id)
-    setRawData({...otherData, ...updates.node})
+    const index = rawData.nodes[0].nodes.findIndex(d => d.id === updates.node.id)
+    rawData.nodes[0].nodes[index] = updates.node
+    setRawData({...rawData})
   }
 
   useEffect(() => {
@@ -641,6 +643,7 @@ function App() {
   
   // get called when drawing a new edge between two nodes
   const onConnect = useCallback((params) => {
+    console.log(params, edgeType)
     setEdges((eds) => { 
       return addEdge({
         ...params, 
