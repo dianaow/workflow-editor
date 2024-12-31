@@ -322,7 +322,7 @@ function App() {
               type: isGroup(d2) ? GROUP_NODE_TYPE : NODE_TYPE,
               data: {
                 label: d2.id,
-                name: d2.data.name,
+                name: d2.name,
                 width,
                 height,
               },
@@ -478,13 +478,13 @@ function App() {
             } else if(targetOnly.length > 0){
               //Y = Y + maxY
             } 
-
+            console.log('d1', d1.data)
             nodes.push({
               ...d1,
               type: GROUP_NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.data.name, 
+                name: d1.name, 
                 width: rectX, 
                 height: maxY
               },
@@ -529,7 +529,7 @@ function App() {
               type: d1.name === 'Group' ? GROUP_NODE_TYPE : NODE_TYPE,
               data: { 
                 label: d1.id, 
-                name: d1.data.name,
+                name: d1.name,
                 width: rectWidth,
                 height: rectWidth,
                 type: 'single',
@@ -574,8 +574,8 @@ function App() {
     )
 
     if(data.nodes[0].id){
-      const maxX = Math.max(...nodes.filter(d => d.data.name !== 'Root').map(d => Math.abs(d.position.x) + d.data.width))
-      const maxY = Math.max(...nodes.filter(d => d.data.name !== 'Root').slice(1).map(d => Math.abs(d.position.y) + d.data.height))
+      const maxX = Math.max(...nodes.filter(d => d.name !== 'Root').map(d => Math.abs(d.position.x) + d.data.width))
+      const maxY = Math.max(...nodes.filter(d => d.name !== 'Root').slice(1).map(d => Math.abs(d.position.y) + d.data.height))
       const newPoint = translatePointOnRotatedPlane([0, 0, 0])
       nodes[0].position = {x: newPoint[0], y: newPoint[1]}
       nodes[0].data = { ...nodes[0].data, width: maxX + rectWidth + pad + nodes.slice(-1)[0].data.width, height: maxY  + pad}
